@@ -1,1 +1,84 @@
-test
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: meshmonitor-postgres
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=meshmonitor
+      - POSTGRES_USER=meshmonitor
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - TZ=Europe/Berlin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meshmonitor -d meshmonitor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  serial-bridge:
+    image: ghcr.io/yeraze/meshtastic-serial-bridge:latest
+    container_name: meshtastic-serial-bridge
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    ports:
+      - "4403:4403"
+    restart: unless-stopped
+    environment:
+      - SERIAL_DEVICE=/dev/ttyUSB0
+      - BAUD_RATE=115200
+      - TCP_PORT=4403
+
+  meshmonitor:
+    image: ghcr.io/yeraze/meshmonitor:latest
+    container_name: meshmonitor
+    ports:
+      - "8080:3001"
+      - "4404:4404"
+    restart: unless-stopped
+    volumes:
+      - meshmonitor-data:/data
+      # Mount local scripts directory for Auto Responder scripts
+      - ./scripts:/data/scripts
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - TZ=Europe/Berlin
+      - MESHTASTIC_NODE_IP=meshtastic-serial-bridge
+      - COOKIE_SECURE=false
+      - ALLOWED_ORIGINS=http://localhost:8080
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/meshmonitor
+    depends_on:
+      - serial-bridge
+      postgres:
+        condition: service_healthy
+
+  # MQTT Client Proxy - routes MQTT through MeshMonitor instead of node WiFi
+  # Credit: https://github.com/LN4CY/mqtt-proxy
+  mqtt-proxy:
+    image: ghcr.io/ln4cy/mqtt-proxy:master
+    container_name: meshmonitor-mqtt-proxy
+    restart: unless-stopped
+    environment:
+      - INTERFACE_TYPE=tcp
+      - TCP_NODE_HOST=meshmonitor
+      - TCP_NODE_PORT=4404
+      - LOG_LEVEL=INFO
+      - TCP_TIMEOUT=300
+      - CONFIG_WAIT_TIMEOUT=60
+      - HEALTH_CHECK_ACTIVITY_TIMEOUT=300
+    depends_on:
+      - meshmonitor
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/healthy && find /tmp/healthy -mmin -1 | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  meshmonitor-data:
+    driver: local
+  postgres-data:
+    driver: local
