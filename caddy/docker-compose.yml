@@ -7,10 +7,12 @@ services:
     image: caddy-security-custom:latest
     container_name: caddy
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     ports:
-      - "80:80"       # HTTP (wird automatisch zu HTTPS weitergeleitet)
-      - "443:443"     # HTTPS
-      - "443:443/udp" # HTTP/3 (QUIC)
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     environment:
       CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL}
       CADDY_JWT_SECRET: ${CADDY_JWT_SECRET}
@@ -29,9 +31,43 @@ services:
       TZ: Europe/Berlin
     volumes:
       - ./site:/srv/infra:ro
-      - php-logs:/var/log/php
+
+  caddymanager-backend:
+    image: caddymanager/caddymanager-backend:latest
+    container_name: caddymanager-backend
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DB_ENGINE: sqlite
+      SQLITE_DB_PATH: /app/data/caddymanager.sqlite
+      CORS_ORIGIN: https://caddy.home.pfeiffer-privat.de
+      LOG_LEVEL: info
+      CADDY_SANDBOX_URL: http://caddy:2019
+      PING_INTERVAL: 30000
+      PING_TIMEOUT: 2000
+      AUDIT_LOG_MAX_SIZE_MB: 100
+      AUDIT_LOG_RETENTION_DAYS: 90
+      JWT_SECRET: ${CADDYMANAGER_JWT_SECRET}
+      JWT_EXPIRATION: 24h
+    volumes:
+      - caddymanager-data:/app/data
+    depends_on:
+      - caddy
+
+  caddymanager-frontend:
+    image: caddymanager/caddymanager-frontend:latest
+    container_name: caddymanager-frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_HOST: caddymanager-backend:3000
+      APP_NAME: Caddy Manager
+      DARK_MODE: "true"
+    ports:
+      - "8011:80"     # HTTP – via Caddy selbst unter caddy.home.pfeiffer-privat.de/manager erreichbar
+    depends_on:
+      - caddymanager-backend
 
 volumes:
   caddy-data:
   caddy-config:
-  php-logs:
+  caddymanager-data:

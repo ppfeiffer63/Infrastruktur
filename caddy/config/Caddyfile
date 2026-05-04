@@ -1,15 +1,14 @@
 # -------------------------------------------------------
-# Caddy Haupt-Proxy Konfiguration
-# -------------------------------------------------------
 # Globale Optionen
+# -------------------------------------------------------
 {
-    # Admin API (für Caddy Web UI)
+    # Admin API – erreichbar für CaddyManager
     admin 0.0.0.0:2019
 
-    # Let's Encrypt – E-Mail für Zertifikate
+    # Let's Encrypt
     email {$CADDY_ACME_EMAIL}
 
-    # Caddy Security Plugin
+    # Caddy Security
     security {
         local identity store localdb {
             realm local
@@ -24,7 +23,7 @@
             ui {
                 links {
                     "Infra-Webseite" https://infra.home.pfeiffer-privat.de icon "las la-home"
-                    "Caddy Admin" https://caddy.home.pfeiffer-privat.de icon "las la-cog"
+                    "Caddy Manager" https://caddy.home.pfeiffer-privat.de/manager icon "las la-cog"
                 }
             }
         }
@@ -37,24 +36,32 @@
 }
 
 # -------------------------------------------------------
-# Caddy Admin UI + Auth-Portal
+# Caddy Auth-Portal + CaddyManager UI
 # -------------------------------------------------------
 caddy.home.pfeiffer-privat.de {
+
     # Auth-Portal
     route /auth* {
         authenticate with myportal
     }
 
-    # Caddy Admin API (geschützt)
+    # CaddyManager UI (geschützt)
+    route /manager* {
+        authorize with admin_only
+        uri strip_prefix /manager
+        reverse_proxy caddymanager-frontend:80
+    }
+
+    # Caddy Admin API (geschützt, für CaddyManager Backend)
     route /api* {
         authorize with admin_only
         reverse_proxy localhost:2019
     }
 
-    # Caddy Web UI
+    # Root → Manager weiterleiten
     route {
         authorize with admin_only
-        reverse_proxy localhost:2019
+        redir /manager
     }
 }
 
@@ -76,6 +83,6 @@ infra.home.pfeiffer-privat.de {
 # -------------------------------------------------------
 # Weitere Domains hier ergänzen:
 # -------------------------------------------------------
-# beispiel.home.pfeiffer-privat.de {
+# meine-app.home.pfeiffer-privat.de {
 #     reverse_proxy localhost:PORT
 # }

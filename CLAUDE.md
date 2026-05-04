@@ -184,3 +184,16 @@ Infrastruktur/
 - Neue Domains: einfach im Caddyfile ergänzen, Stack updaten
 - Env-Variablen: `CADDY_ACME_EMAIL`, `CADDY_JWT_SECRET`
 
+
+### 2025-05-04 (11)
+
+#### Caddy Stack: CaddyManager Web UI integriert
+- CaddyManager v0.0.2 (SQLite, kein MongoDB nötig)
+- Backend: `caddymanager/caddymanager-backend` – Admin API Proxy zu Caddy :2019
+- Frontend: `caddymanager/caddymanager-frontend` – Vue 3 Web UI auf Port 8011
+- Caddy Admin API auf `0.0.0.0:2019` (für CaddyManager erreichbar)
+- Routing: `/manager` → CaddyManager (Auth-geschützt via Caddy Security)
+- Neue Env-Variable: `CADDYMANAGER_JWT_SECRET`
+- Standard-Login CaddyManager: admin/caddyrocks → sofort ändern
+- Server in CaddyManager: `http://caddy:2019` eintragen
+
