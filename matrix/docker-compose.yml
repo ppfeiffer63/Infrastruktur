@@ -1,0 +1,63 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: matrix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: synapse
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      TZ: Europe/Berlin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse -d synapse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - matrix-internal
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: matrix-synapse
+    restart: unless-stopped
+    environment:
+      SYNAPSE_SERVER_NAME: ${MATRIX_DOMAIN}
+      SYNAPSE_REPORT_STATS: "no"
+      TZ: Europe/Berlin
+    volumes:
+      - synapse-data:/data
+    ports:
+      - "8008:8008"   # HTTP – wird vom NGinx Proxy Manager weitergeleitet
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - matrix-internal
+    # Beim ersten Start Konfiguration generieren:
+    # docker compose run --rm synapse generate
+
+  element:
+    image: vectorim/element-web:latest
+    container_name: matrix-element
+    restart: unless-stopped
+    volumes:
+      - ./element-config.json:/app/config.json:ro
+    ports:
+      - "8009:80"     # HTTP – wird vom NGinx Proxy Manager weitergeleitet
+    networks:
+      - matrix-internal
+
+networks:
+  matrix-internal:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  synapse-data:
+    driver: local

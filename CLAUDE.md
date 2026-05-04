@@ -94,3 +94,15 @@ Infrastruktur/
 - `meshmonitor/` entsprechend verschoben
 - Konvention: `docker-compose.yml`, `.env.example`, `README.md` pro Ordner
 
+
+### 2025-05-04 (4)
+
+#### Stack: matrix – angelegt
+- **Synapse** (matrixdotorg/synapse:latest) auf Port 8008
+- **PostgreSQL 16** als Datenbank (Health-Check)
+- **Element Web** (vectorim/element-web) auf Port 8009
+- TLS/HTTPS übernimmt vorhandener NGinx Proxy Manager
+- Domains: `matrix.home.pfeiffer-privat.de` → :8008, `element.home.pfeiffer-privat.de` → :8009
+- `element-config.json` mit Dark-Theme und DE-Locale vorkonfiguriert
+- Dateien: `docker-compose.yml`, `.env.example`, `element-config.json`, `README.md`
+
