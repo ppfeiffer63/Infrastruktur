@@ -1,20 +1,26 @@
 # Infrastruktur
 
-Persönliches Infrastruktur-Repository von ppfeiffer.  
-Verwaltung und Dokumentation von selbst gehosteten Diensten und Projekten.
+Sammlung von Docker Compose Stacks und Konfigurationen für selbst gehostete Dienste.
 
-## Themen
-- 🐘 PHP / 🐍 Python / ⚙️ C++
-- 🐳 Docker & Docker Compose
-- 🦊 Forgejo (Self-hosted Git)
-- 📡 Meshtastic / MeshCore
-- 🌐 WordPress
+## Struktur
 
-## Projekte
+```
+stacks/
+└── meshmonitor/       # Meshtastic-Netzwerküberwachung
+    ├── docker-compose.yml
+    ├── .env.example   # Vorlage – kopieren nach .env
+    └── README.md
+```
 
-| Ordner | Beschreibung |
-|--------|-------------|
-| `MeshMonitor/` | Docker-Stack für Meshtastic-Netzwerküberwachung (PostgreSQL, Serial-Bridge, MQTT-Proxy) |
+## Verwendung
+
+Jeden Stack findest du unter `stacks/<name>/`. Dort liegt immer:
+- `docker-compose.yml` – der Stack
+- `.env.example` – Vorlage für Umgebungsvariablen (→ kopieren nach `.env`)
+- `README.md` – Stack-spezifische Doku
+
+> ⚠️ `.env`-Dateien mit echten Secrets sind per `.gitignore` ausgeschlossen.
 
 ## Claude-Historie
-Alle Aktivitäten von Claude sind in [`CLAUDE.md`](./CLAUDE.md) dokumentiert.
+
+Alle Aktivitäten sind in [`CLAUDE.md`](./CLAUDE.md) protokolliert.

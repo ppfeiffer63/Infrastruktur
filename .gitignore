@@ -1,0 +1,11 @@
+# Secrets – niemals ins Repo!
+**/.env
+!**/.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

@@ -69,3 +69,19 @@ Infrastruktur/
 [mqtt-proxy] ──── (MQTT-Broker extern)
 ```
 
+
+### 2025-05-04 (2)
+
+#### Repo-Struktur reorganisiert
+- Konzept: Repository als **Sammlung von Docker Compose Stacks**
+- Neue Verzeichnisstruktur: `stacks/<stackname>/`
+- `MeshMonitor/` → `stacks/meshmonitor/` verschoben
+- `.env` → `.env.example` (Secrets nie ins Repo)
+- `.gitignore` angelegt: `**/.env` global ausgeschlossen
+- README.md neu strukturiert
+
+#### Konventionen (ab jetzt gültig)
+- Jeder Stack liegt in `stacks/<name>/`
+- Pflichtdateien pro Stack: `docker-compose.yml`, `.env.example`, `README.md`
+- Echte `.env`-Dateien bleiben lokal, nie im Repo
+
