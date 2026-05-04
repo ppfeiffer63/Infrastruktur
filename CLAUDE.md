@@ -197,3 +197,13 @@ Infrastruktur/
 - Standard-Login CaddyManager: admin/caddyrocks → sofort ändern
 - Server in CaddyManager: `http://caddy:2019` eintragen
 
+
+### 2025-05-04 (12)
+
+#### Installationsanleitung angelegt
+- `docs/INSTALLATION.md` erstellt
+- Enthält: Mermaid-Diagramme (Architektur, Ablaufdiagramme, Sequenzdiagramme)
+- Alle 5 Phasen dokumentiert: Host, Portainer, Caddy, Matrix, MeshMonitor
+- Fehlerbehebungstabelle und nützliche Befehle ergänzt
+- Mermaid wird in Forgejo nativ gerendert
+
