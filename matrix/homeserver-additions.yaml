@@ -2,11 +2,10 @@
 # Diese Einstellungen in die generierte homeserver.yaml einfügen/überschreiben
 
 # -------------------------------------------------------
-# Registrierung deaktivieren (privater Server)
+# Registrierung: Invitation-only per Registration Token
 # -------------------------------------------------------
-enable_registration: false
-
-# Kein Gast-Zugang
+enable_registration: true
+registration_requires_token: true
 allow_guest_access: false
 
 # -------------------------------------------------------
@@ -23,12 +22,9 @@ database:
     cp_max: 10
 
 # -------------------------------------------------------
-# Federation (mit anderen Matrix-Servern)
-# Für rein privaten Server deaktivieren:
+# Federation deaktivieren (rein privater Server)
 # -------------------------------------------------------
-federation_domain_whitelist: []   # leere Liste = kein Federation
-# Alternativ komplett sperren:
-# federation_sender_instances: []
+federation_domain_whitelist: []
 
 # -------------------------------------------------------
 # Rate Limiting (optional lockern für kleine Nutzerzahl)

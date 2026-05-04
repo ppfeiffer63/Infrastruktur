@@ -132,3 +132,13 @@ Infrastruktur/
   - User anlegen, auflisten, Passwort zurücksetzen, deaktivieren
   - Admin-API Beispiele mit Access Token
 
+
+### 2025-05-04 (7)
+
+#### Matrix: Umstellung auf Invitation-only per Registration Token
+- `enable_registration: true` + `registration_requires_token: true`
+- User können sich selbst registrieren, aber nur mit Admin-ausgestelltem Token
+- `homeserver-additions.yaml` aktualisiert
+- README erweitert um vollständige Token-Verwaltung (erstellen, auflisten, löschen)
+- Registrierungsablauf aus User-Sicht dokumentiert
+

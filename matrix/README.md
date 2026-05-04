@@ -5,9 +5,10 @@ Verwaltung via **Portainer CE**, TLS via **NGinx Proxy Manager**.
 
 ## Authentifizierung
 
-- **Nur lokale User** – Registrierung deaktiviert
-- Admin legt User per CLI an
-- Kein Gastzugang, kein Self-Signup
+- **Invitation-only per Registration Token**
+- User registrieren sich selbst in Element – aber nur mit gültigem Token
+- Token wird vom Admin erstellt und individuell vergeben
+- Kein Gastzugang
 
 ## Dienste
 
@@ -38,21 +39,18 @@ docker run --rm \
   matrixdotorg/synapse:latest generate
 ```
 
-Die `homeserver.yaml` liegt danach im Volume `matrix-synapse-data`.
-
 ### 2. homeserver.yaml anpassen
-
-Volume auf dem Host öffnen (Pfad je nach Docker-Installation):
 
 ```bash
 nano /var/lib/docker/volumes/matrix-synapse-data/_data/homeserver.yaml
 ```
 
-Folgende Einstellungen setzen (siehe auch `homeserver-additions.yaml` im Repo):
+Folgende Einstellungen setzen (siehe auch `homeserver-additions.yaml`):
 
 ```yaml
-# Registrierung sperren
-enable_registration: false
+# Invitation-only per Token
+enable_registration: true
+registration_requires_token: true
 allow_guest_access: false
 
 # PostgreSQL
@@ -66,7 +64,7 @@ database:
     cp_min: 5
     cp_max: 10
 
-# Federation deaktivieren (nur interner Server)
+# Federation deaktivieren
 federation_domain_whitelist: []
 ```
 
@@ -89,9 +87,7 @@ Portainer → **Stacks → Add Stack → Repository**
 | `MATRIX_DOMAIN` | `matrix.home.pfeiffer-privat.de` |
 | `POSTGRES_PASSWORD` | *(openssl rand -base64 32)* |
 
-### 4. Stack deployen
-
-→ **Deploy the stack**
+### 4. Stack deployen → **Deploy the stack**
 
 ### 5. NGinx Proxy Manager
 
@@ -102,22 +98,57 @@ Portainer → **Stacks → Add Stack → Repository**
 
 ---
 
-## Benutzerverwaltung
+## Token-Verwaltung
 
-### User anlegen
+Tokens werden per Admin-API verwaltet. Dafür wird ein Admin-Zugriffstoken benötigt:  
+Element → *Einstellungen → Hilfe & Info → Zugriffstoken*
+
+### Token erstellen
 
 ```bash
-docker exec -it matrix-synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -u BENUTZERNAME \
-  -p PASSWORT \
-  -a \
-  http://localhost:8008
+# Einmaliger Token (nur ein User kann sich damit registrieren)
+curl -X POST \
+  "http://localhost:8008/_synapse/admin/v1/registration_tokens/new" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"uses_allowed": 1}'
+
+# Token mit Ablaufdatum (Unix-Timestamp)
+curl -X POST \
+  "http://localhost:8008/_synapse/admin/v1/registration_tokens/new" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"uses_allowed": 1, "expiry_time": 1735689600000}'
+
+# Eigenen Token-String festlegen
+curl -X POST \
+  "http://localhost:8008/_synapse/admin/v1/registration_tokens/new" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"token": "einladung-max", "uses_allowed": 1}'
 ```
 
-Flag `-a` = Admin. Für normale User `-a` weglassen.
+### Alle Tokens anzeigen
 
-### User-Liste anzeigen (Admin-API)
+```bash
+curl -X GET \
+  "http://localhost:8008/_synapse/admin/v1/registration_tokens" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+```
+
+### Token löschen
+
+```bash
+curl -X DELETE \
+  "http://localhost:8008/_synapse/admin/v1/registration_tokens/TOKEN_STRING" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+```
+
+---
+
+## Benutzerverwaltung
+
+### User-Liste anzeigen
 
 ```bash
 curl -X GET \
@@ -125,16 +156,7 @@ curl -X GET \
   -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
 ```
 
-Den Admin-Token bekommt man nach dem Login in Element unter:  
-*Einstellungen → Hilfe & Info → Zugriffstoken*
-
 ### Passwort zurücksetzen
-
-```bash
-docker exec -it matrix-synapse hash_password -p NEUES_PASSWORT
-```
-
-Den Hash dann per Admin-API setzen:
 
 ```bash
 curl -X PUT \
@@ -153,6 +175,15 @@ curl -X PUT \
   -H "Content-Type: application/json" \
   -d '{"deactivated": true}'
 ```
+
+---
+
+## Registrierung (User-Sicht)
+
+1. Element öffnen: `https://element.home.pfeiffer-privat.de`
+2. *Konto erstellen* → Homeserver: `matrix.home.pfeiffer-privat.de`
+3. Registrierungstoken eingeben (vom Admin erhalten)
+4. Benutzername + Passwort wählen → fertig
 
 ---
 
