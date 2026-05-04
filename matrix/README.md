@@ -1,13 +1,12 @@
 # Matrix Stack
 
-Docker Compose Stack mit Synapse (Matrix-Server), PostgreSQL und Element Web.  
+Docker Compose Stack mit Synapse (Matrix-Server), PostgreSQL, Element Web und Synapse Admin.  
 Verwaltung via **Portainer CE**, TLS via **NGinx Proxy Manager**.
 
 ## Authentifizierung
 
 - **Invitation-only per Registration Token**
-- User registrieren sich selbst in Element – aber nur mit gültigem Token
-- Token wird vom Admin erstellt und individuell vergeben
+- User registrieren sich in Element mit einem Admin-ausgestellten Token
 - Kein Gastzugang
 
 ## Dienste
@@ -17,13 +16,15 @@ Verwaltung via **Portainer CE**, TLS via **NGinx Proxy Manager**.
 | `postgres` | postgres:16-alpine | – | Datenbank |
 | `synapse` | matrixdotorg/synapse | 8008 | Matrix-Homeserver |
 | `element` | vectorim/element-web | 8009 | Web-Client |
+| `synapse-admin` | awesometechnologies/synapse-admin | 8010 | Admin-Webinterface |
 
-## Domains (via NGinx Proxy Manager)
+## Domains / Pfade (via NGinx Proxy Manager)
 
-| Domain | Ziel |
-|--------|------|
-| `matrix.home.pfeiffer-privat.de` | `localhost:8008` |
-| `element.home.pfeiffer-privat.de` | `localhost:8009` |
+| URL | Ziel | Beschreibung |
+|-----|------|-------------|
+| `https://matrix.home.pfeiffer-privat.de` | `localhost:8008` | Synapse API |
+| `https://matrix.home.pfeiffer-privat.de/admin` | `localhost:8010` | Synapse Admin UI |
+| `https://element.home.pfeiffer-privat.de` | `localhost:8009` | Element Web-Client |
 
 ---
 
@@ -45,15 +46,13 @@ docker run --rm \
 nano /var/lib/docker/volumes/matrix-synapse-data/_data/homeserver.yaml
 ```
 
-Folgende Einstellungen setzen (siehe auch `homeserver-additions.yaml`):
+Einstellungen (siehe auch `homeserver-additions.yaml`):
 
 ```yaml
-# Invitation-only per Token
 enable_registration: true
 registration_requires_token: true
 allow_guest_access: false
 
-# PostgreSQL
 database:
   name: psycopg2
   args:
@@ -64,7 +63,6 @@ database:
     cp_min: 5
     cp_max: 10
 
-# Federation deaktivieren
 federation_domain_whitelist: []
 ```
 
@@ -89,58 +87,69 @@ Portainer → **Stacks → Add Stack → Repository**
 
 ### 4. Stack deployen → **Deploy the stack**
 
-### 5. NGinx Proxy Manager
+### 5. NGinx Proxy Manager konfigurieren
 
-| Proxy Host | Forward | SSL |
-|------------|---------|-----|
-| `matrix.home.pfeiffer-privat.de` | `localhost:8008` | Let's Encrypt |
-| `element.home.pfeiffer-privat.de` | `localhost:8009` | Let's Encrypt |
+**Proxy Host 1 – Synapse + Admin UI:**
+
+- Domain: `matrix.home.pfeiffer-privat.de`
+- Forward: `localhost:8008`
+- SSL: Let's Encrypt aktivieren
+
+Dann unter **Custom Nginx Configuration** (Tab im Proxy Host):
+
+```nginx
+# Synapse Admin UI unter /admin
+location /admin {
+    proxy_pass http://localhost:8010/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+**Proxy Host 2 – Element:**
+
+- Domain: `element.home.pfeiffer-privat.de`
+- Forward: `localhost:8009`
+- SSL: Let's Encrypt aktivieren
+
+### 6. Admin-User anlegen (erster Login für Synapse Admin)
+
+```bash
+docker exec -it matrix-synapse register_new_matrix_user \
+  -c /data/homeserver.yaml \
+  -u admin -p PASSWORT -a \
+  http://localhost:8008
+```
+
+### 7. Synapse Admin UI öffnen
+
+URL: `https://matrix.home.pfeiffer-privat.de/admin`
+
+- Homeserver: `https://matrix.home.pfeiffer-privat.de`
+- Username + Passwort des Admin-Accounts eingeben
 
 ---
 
-## Token-Verwaltung
+## Token-Verwaltung (alternativ per Admin UI)
 
-Tokens werden per Admin-API verwaltet. Dafür wird ein Admin-Zugriffstoken benötigt:  
-Element → *Einstellungen → Hilfe & Info → Zugriffstoken*
+Tokens können bequem über die Synapse Admin UI verwaltet werden:  
+**Synapse Admin → Registration Tokens**
 
-### Token erstellen
+Oder per API:
 
 ```bash
-# Einmaliger Token (nur ein User kann sich damit registrieren)
-curl -X POST \
-  "http://localhost:8008/_synapse/admin/v1/registration_tokens/new" \
-  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"uses_allowed": 1}'
-
-# Token mit Ablaufdatum (Unix-Timestamp)
-curl -X POST \
-  "http://localhost:8008/_synapse/admin/v1/registration_tokens/new" \
-  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"uses_allowed": 1, "expiry_time": 1735689600000}'
-
-# Eigenen Token-String festlegen
+# Token erstellen (einmalig nutzbar)
 curl -X POST \
   "http://localhost:8008/_synapse/admin/v1/registration_tokens/new" \
   -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"token": "einladung-max", "uses_allowed": 1}'
-```
 
-### Alle Tokens anzeigen
-
-```bash
+# Alle Tokens anzeigen
 curl -X GET \
   "http://localhost:8008/_synapse/admin/v1/registration_tokens" \
-  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
-```
-
-### Token löschen
-
-```bash
-curl -X DELETE \
-  "http://localhost:8008/_synapse/admin/v1/registration_tokens/TOKEN_STRING" \
   -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
 ```
 
@@ -148,42 +157,11 @@ curl -X DELETE \
 
 ## Benutzerverwaltung
 
-### User-Liste anzeigen
-
-```bash
-curl -X GET \
-  "http://localhost:8008/_synapse/admin/v2/users?from=0&limit=10" \
-  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
-```
-
-### Passwort zurücksetzen
-
-```bash
-curl -X PUT \
-  "http://localhost:8008/_synapse/admin/v2/users/@BENUTZERNAME:matrix.home.pfeiffer-privat.de" \
-  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"password": "NEUES_PASSWORT"}'
-```
-
-### User deaktivieren
-
-```bash
-curl -X PUT \
-  "http://localhost:8008/_synapse/admin/v2/users/@BENUTZERNAME:matrix.home.pfeiffer-privat.de" \
-  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"deactivated": true}'
-```
-
----
-
-## Registrierung (User-Sicht)
-
-1. Element öffnen: `https://element.home.pfeiffer-privat.de`
-2. *Konto erstellen* → Homeserver: `matrix.home.pfeiffer-privat.de`
-3. Registrierungstoken eingeben (vom Admin erhalten)
-4. Benutzername + Passwort wählen → fertig
+Über die **Synapse Admin UI** unter `https://matrix.home.pfeiffer-privat.de/admin`:
+- User anlegen, bearbeiten, deaktivieren
+- Passwörter zurücksetzen
+- Räume verwalten
+- Registration Tokens erstellen
 
 ---
 
@@ -191,5 +169,6 @@ curl -X PUT \
 
 ```bash
 docker logs -f matrix-synapse
+docker logs -f matrix-synapse-admin
 docker logs -f matrix-postgres
 ```

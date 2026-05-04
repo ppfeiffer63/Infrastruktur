@@ -48,6 +48,18 @@ services:
     ports:
       - "8009:80"     # HTTP – TLS-Terminierung via NGinx Proxy Manager
 
+  synapse-admin:
+    image: awesometechnologies/synapse-admin:latest
+    container_name: matrix-synapse-admin
+    restart: unless-stopped
+    environment:
+      # Basis-URL des Synapse-Servers (aus Browser-Sicht)
+      REACT_APP_SERVER: https://${MATRIX_DOMAIN}
+    ports:
+      - "8010:80"     # HTTP – TLS-Terminierung via NGinx Proxy Manager
+    depends_on:
+      - synapse
+
 volumes:
   matrix-postgres-data:
   matrix-synapse-data:

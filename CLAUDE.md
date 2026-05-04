@@ -142,3 +142,14 @@ Infrastruktur/
 - README erweitert um vollständige Token-Verwaltung (erstellen, auflisten, löschen)
 - Registrierungsablauf aus User-Sicht dokumentiert
 
+
+### 2025-05-04 (8)
+
+#### Matrix: Synapse Admin UI hinzugefügt
+- Image: `awesometechnologies/synapse-admin:latest`
+- Port 8010, erreichbar unter `https://matrix.home.pfeiffer-privat.de/admin`
+- Pfad-Routing via NGinx Proxy Manager Custom Nginx Configuration (location /admin)
+- `REACT_APP_SERVER` auf Synapse-Domain gesetzt
+- README: NGinx Custom Config für /admin-Pfad dokumentiert
+- Token-Verwaltung jetzt primär über Admin UI möglich
+
