@@ -20,24 +20,62 @@ services:
       start_period: 10s
 
   synapse:
-    image: matrixdotorg/synapse:latest
+    build:
+      context: ./synapse
+      dockerfile: Dockerfile
+    image: matrix-synapse-custom:latest
     container_name: matrix-synapse
     restart: unless-stopped
     environment:
       SYNAPSE_SERVER_NAME: ${MATRIX_DOMAIN}
       SYNAPSE_REPORT_STATS: "no"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       TZ: Europe/Berlin
     volumes:
       - matrix-synapse-data:/data
     ports:
-      - "8008:8008"   # HTTP – TLS-Terminierung via NGinx Proxy Manager
+      - "8008:8008"
     depends_on:
       postgres:
         condition: service_healthy
-    # Beim ersten Start Konfiguration generieren (einmalig, außerhalb Portainer):
-    # docker run --rm -e SYNAPSE_SERVER_NAME=matrix.home.pfeiffer-privat.de \
-    #   -e SYNAPSE_REPORT_STATS=no \
-    #   -v matrix-synapse-data:/data matrixdotorg/synapse:latest generate
+
+  # Einmaliger Init-Container: legt Admin-User an (wird nach Erfolg beendet)
+  synapse-init:
+    image: curlimages/curl:latest
+    container_name: matrix-synapse-init
+    restart: on-failure
+    environment:
+      MATRIX_DOMAIN: ${MATRIX_DOMAIN}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        MARKER="/data/.admin_created"
+        if [ -f "$$MARKER" ]; then
+          echo "Admin bereits vorhanden, überspringe."
+          exit 0
+        fi
+
+        echo "Warte auf Synapse..."
+        until curl -sf "http://matrix-synapse:8008/_matrix/client/versions" > /dev/null; do
+          sleep 3
+        done
+
+        echo "Lege Admin-User an..."
+        curl -sf -X POST \
+          "http://matrix-synapse:8008/_synapse/admin/v1/register" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"username\": \"$$ADMIN_USERNAME\",
+            \"password\": \"$$ADMIN_PASSWORD\",
+            \"admin\": true,
+            \"nonce\": \"$(curl -sf http://matrix-synapse:8008/_synapse/admin/v1/register | grep -o '\"nonce\":\"[^\"]*\"' | cut -d'\"' -f4)\"
+          }" && touch $$MARKER && echo "Admin angelegt." || echo "Fehler beim Anlegen."
+    volumes:
+      - matrix-synapse-data:/data
+    depends_on:
+      - synapse
 
   element:
     image: vectorim/element-web:latest
@@ -46,17 +84,16 @@ services:
     volumes:
       - matrix-element-config:/app/config:ro
     ports:
-      - "8009:80"     # HTTP – TLS-Terminierung via NGinx Proxy Manager
+      - "8009:80"
 
   synapse-admin:
     image: awesometechnologies/synapse-admin:latest
     container_name: matrix-synapse-admin
     restart: unless-stopped
     environment:
-      # Basis-URL des Synapse-Servers (aus Browser-Sicht)
       REACT_APP_SERVER: https://${MATRIX_DOMAIN}
     ports:
-      - "8010:80"     # HTTP – TLS-Terminierung via NGinx Proxy Manager
+      - "8010:80"
     depends_on:
       - synapse
 

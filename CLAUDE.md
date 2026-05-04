@@ -153,3 +153,18 @@ Infrastruktur/
 - README: NGinx Custom Config für /admin-Pfad dokumentiert
 - Token-Verwaltung jetzt primär über Admin UI möglich
 
+
+### 2025-05-04 (9)
+
+#### Matrix: Vollautomatische Initialisierung via Docker Entrypoint
+- Custom Synapse-Image mit eigenem Entrypoint (`synapse/Dockerfile` + `synapse/entrypoint.sh`)
+- Entrypoint erledigt beim ersten Start automatisch:
+  - homeserver.yaml generieren
+  - PostgreSQL konfigurieren (psycopg2)
+  - Registration Token aktivieren
+  - Federation deaktivieren
+  - Init-Marker `/data/.initialized` verhindert Wiederholung
+- Neuer `synapse-init`-Container legt Admin-User automatisch an (curl-basiert)
+- Neue Env-Variablen: `ADMIN_USERNAME`, `ADMIN_PASSWORD`
+- README vereinfacht: nur noch Portainer-Deploy + NGinx nötig
+
