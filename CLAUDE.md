@@ -120,3 +120,15 @@ Infrastruktur/
 - READMEs: Portainer-Setup-Anleitung mit Repository-Anbindung ergänzt
 - Portainer-Workflow: Stacks → Add Stack → Repository → Forgejo-Token
 
+
+### 2025-05-04 (6)
+
+#### Matrix: Authentifizierung konfiguriert
+- Entscheidung: nur lokale User, Admin legt an
+- `enable_registration: false`, `allow_guest_access: false`
+- Federation deaktiviert (`federation_domain_whitelist: []`)
+- `homeserver-additions.yaml` angelegt – Vorlage für manuelle homeserver.yaml-Anpassungen
+- README erweitert um vollständige Benutzerverwaltung:
+  - User anlegen, auflisten, Passwort zurücksetzen, deaktivieren
+  - Admin-API Beispiele mit Access Token
+

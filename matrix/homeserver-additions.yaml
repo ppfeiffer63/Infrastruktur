@@ -1,0 +1,42 @@
+# Ergänzungen für homeserver.yaml nach dem ersten "generate"
+# Diese Einstellungen in die generierte homeserver.yaml einfügen/überschreiben
+
+# -------------------------------------------------------
+# Registrierung deaktivieren (privater Server)
+# -------------------------------------------------------
+enable_registration: false
+
+# Kein Gast-Zugang
+allow_guest_access: false
+
+# -------------------------------------------------------
+# Datenbank: PostgreSQL statt SQLite
+# -------------------------------------------------------
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: DEIN_POSTGRES_PASSWORD   # gleich wie POSTGRES_PASSWORD in Portainer
+    database: synapse
+    host: postgres
+    cp_min: 5
+    cp_max: 10
+
+# -------------------------------------------------------
+# Federation (mit anderen Matrix-Servern)
+# Für rein privaten Server deaktivieren:
+# -------------------------------------------------------
+federation_domain_whitelist: []   # leere Liste = kein Federation
+# Alternativ komplett sperren:
+# federation_sender_instances: []
+
+# -------------------------------------------------------
+# Rate Limiting (optional lockern für kleine Nutzerzahl)
+# -------------------------------------------------------
+rc_login:
+  address:
+    per_second: 0.1
+    burst_count: 3
+  account:
+    per_second: 0.1
+    burst_count: 3
