@@ -1,0 +1,37 @@
+services:
+
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: caddy-security-custom:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"       # HTTP (wird automatisch zu HTTPS weitergeleitet)
+      - "443:443"     # HTTPS
+      - "443:443/udp" # HTTP/3 (QUIC)
+    environment:
+      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL}
+      CADDY_JWT_SECRET: ${CADDY_JWT_SECRET}
+      TZ: Europe/Berlin
+    volumes:
+      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv/infra:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  php:
+    image: php:8.3-fpm-alpine
+    container_name: caddy-php
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - ./site:/srv/infra:ro
+      - php-logs:/var/log/php
+
+volumes:
+  caddy-data:
+  caddy-config:
+  php-logs:

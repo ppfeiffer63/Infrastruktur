@@ -1,0 +1,81 @@
+# -------------------------------------------------------
+# Caddy Haupt-Proxy Konfiguration
+# -------------------------------------------------------
+# Globale Optionen
+{
+    # Admin API (für Caddy Web UI)
+    admin 0.0.0.0:2019
+
+    # Let's Encrypt – E-Mail für Zertifikate
+    email {$CADDY_ACME_EMAIL}
+
+    # Caddy Security Plugin
+    security {
+        local identity store localdb {
+            realm local
+            path /data/auth/users.json
+        }
+
+        authentication portal myportal {
+            crypto default token lifetime 3600
+            crypto key sign-verify {$CADDY_JWT_SECRET}
+            cookie domain home.pfeiffer-privat.de
+            enable identity store localdb
+            ui {
+                links {
+                    "Infra-Webseite" https://infra.home.pfeiffer-privat.de icon "las la-home"
+                    "Caddy Admin" https://caddy.home.pfeiffer-privat.de icon "las la-cog"
+                }
+            }
+        }
+
+        authorization policy admin_only {
+            set auth url https://caddy.home.pfeiffer-privat.de/auth
+            allow roles authp/admin
+        }
+    }
+}
+
+# -------------------------------------------------------
+# Caddy Admin UI + Auth-Portal
+# -------------------------------------------------------
+caddy.home.pfeiffer-privat.de {
+    # Auth-Portal
+    route /auth* {
+        authenticate with myportal
+    }
+
+    # Caddy Admin API (geschützt)
+    route /api* {
+        authorize with admin_only
+        reverse_proxy localhost:2019
+    }
+
+    # Caddy Web UI
+    route {
+        authorize with admin_only
+        reverse_proxy localhost:2019
+    }
+}
+
+# -------------------------------------------------------
+# PHP-Webseite
+# -------------------------------------------------------
+infra.home.pfeiffer-privat.de {
+    root * /srv/infra
+    php_fastcgi php:9000
+    file_server
+    encode gzip
+
+    log {
+        output file /data/logs/infra-access.log
+        format json
+    }
+}
+
+# -------------------------------------------------------
+# Weitere Domains hier ergänzen:
+# -------------------------------------------------------
+# beispiel.home.pfeiffer-privat.de {
+#     reverse_proxy localhost:PORT
+# }

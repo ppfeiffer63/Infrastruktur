@@ -168,3 +168,19 @@ Infrastruktur/
 - Neue Env-Variablen: `ADMIN_USERNAME`, `ADMIN_PASSWORD`
 - README vereinfacht: nur noch Portainer-Deploy + NGinx nötig
 
+
+### 2025-05-04 (10)
+
+#### Stack: caddy – angelegt (Haupt-Reverse-Proxy)
+- **Caddy Security** (ghcr.io/greenpau/caddy-security) als Haupt-Proxy
+- Ports 80/443 direkt am Host (kein vorgelagerter Proxy)
+- Automatische Let's Encrypt Zertifikate für alle Domains
+- **PHP 8.3-fpm-alpine** für PHP-Webseite
+- Auth-Portal via Caddy Security (JWT, lokale User-DB)
+- Domains:
+  - `caddy.home.pfeiffer-privat.de` → Admin UI + Auth-Portal (geschützt)
+  - `infra.home.pfeiffer-privat.de` → PHP-Starter-Webseite
+- Struktur: `config/Caddyfile` (Proxy-Konfig), `site/` (PHP-Webseite)
+- Neue Domains: einfach im Caddyfile ergänzen, Stack updaten
+- Env-Variablen: `CADDY_ACME_EMAIL`, `CADDY_JWT_SECRET`
+
