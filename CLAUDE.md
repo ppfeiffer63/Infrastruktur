@@ -85,3 +85,12 @@ Infrastruktur/
 - Pflichtdateien pro Stack: `docker-compose.yml`, `.env.example`, `README.md`
 - Echte `.env`-Dateien bleiben lokal, nie im Repo
 
+
+### 2025-05-04 (3)
+
+#### Struktur vereinfacht
+- `stacks/`-Zwischenordner entfernt
+- Jeder Stack liegt direkt im Root: `<stackname>/`
+- `meshmonitor/` entsprechend verschoben
+- Konvention: `docker-compose.yml`, `.env.example`, `README.md` pro Ordner
+
