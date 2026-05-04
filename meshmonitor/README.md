@@ -1,6 +1,7 @@
 # MeshMonitor Stack
 
-Docker Compose Stack zur Überwachung eines Meshtastic-Netzwerks.
+Docker Compose Stack zur Überwachung eines Meshtastic-Netzwerks.  
+Verwaltung via **Portainer CE**.
 
 ## Dienste
 
@@ -11,20 +12,35 @@ Docker Compose Stack zur Überwachung eines Meshtastic-Netzwerks.
 | `meshmonitor` | ghcr.io/yeraze/meshmonitor | 8080, 4404 | Web-UI & API |
 | `mqtt-proxy` | ghcr.io/ln4cy/mqtt-proxy | – | MQTT-Proxy |
 
-## Setup
+## Portainer Setup
 
-```bash
-cp .env.example .env
-# .env bearbeiten und Passwörter setzen
-nano .env
+### 1. Stack anlegen
 
-docker compose up -d
-```
+Portainer → **Stacks → Add Stack → Repository**
 
-## Voraussetzungen
+| Feld | Wert |
+|------|------|
+| Name | `meshmonitor` |
+| Repository URL | `https://git.pfeiffer-privat.de/ppfeiffer/Infrastruktur.git` |
+| Repository reference | `refs/heads/main` |
+| Compose path | `meshmonitor/docker-compose.yml` |
+| Authentication | Forgejo-Token hinterlegen |
 
-- Meshtastic-Node per USB (`/dev/ttyUSB0`)
-- Docker & Docker Compose
+### 2. Environment Variables in Portainer
+
+| Variable | Wert |
+|----------|------|
+| `SESSION_SECRET` | *(z.B. `openssl rand -base64 32`)* |
+| `POSTGRES_USER` | `meshmonitor` |
+| `POSTGRES_PASSWORD` | *(sicheres Passwort)* |
+
+### 3. Voraussetzungen
+
+- Meshtastic-Node per USB (`/dev/ttyUSB0`) am Host angeschlossen
+
+### 4. Stack deployen
+
+→ **Deploy the stack**
 
 ## Zugriff
 

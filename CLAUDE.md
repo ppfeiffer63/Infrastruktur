@@ -106,3 +106,17 @@ Infrastruktur/
 - `element-config.json` mit Dark-Theme und DE-Locale vorkonfiguriert
 - Dateien: `docker-compose.yml`, `.env.example`, `element-config.json`, `README.md`
 
+
+### 2025-05-04 (5)
+
+#### Portainer-Integration für alle Stacks
+- Beide Stacks (meshmonitor, matrix) auf Portainer CE umgestellt
+- Änderungen:
+  - Eigene `networks`-Blöcke entfernt (Portainer verwaltet Netzwerke)
+  - Volume-Namen eindeutig pro Stack (Präfix: `matrix-*`, `meshmonitor-*`)
+  - `env_file: .env` entfernt – Env-Variablen werden in Portainer UI gepflegt
+  - `./scripts` Bind-Mount → named Volume `meshmonitor-scripts`
+  - `.env.example` als Referenz für Portainer Environment Variables
+- READMEs: Portainer-Setup-Anleitung mit Repository-Anbindung ergänzt
+- Portainer-Workflow: Stacks → Add Stack → Repository → Forgejo-Token
+

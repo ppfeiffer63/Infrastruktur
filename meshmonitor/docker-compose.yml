@@ -1,10 +1,11 @@
 services:
+
   postgres:
     image: postgres:16-alpine
     container_name: meshmonitor-postgres
     restart: unless-stopped
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - meshmonitor-postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=meshmonitor
       - POSTGRES_USER=meshmonitor
@@ -39,9 +40,7 @@ services:
     restart: unless-stopped
     volumes:
       - meshmonitor-data:/data
-      # Mount local scripts directory for Auto Responder scripts
-      - ./scripts:/data/scripts
-    env_file: .env
+      - meshmonitor-scripts:/data/scripts
     environment:
       - NODE_ENV=production
       - TZ=Europe/Berlin
@@ -49,13 +48,14 @@ services:
       - COOKIE_SECURE=false
       - ALLOWED_ORIGINS=http://localhost:8080
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/meshmonitor
+      - SESSION_SECRET=${SESSION_SECRET}
+      - POSTGRES_USER=meshmonitor
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     depends_on:
       - serial-bridge
       postgres:
         condition: service_healthy
 
-  # MQTT Client Proxy - routes MQTT through MeshMonitor instead of node WiFi
-  # Credit: https://github.com/LN4CY/mqtt-proxy
   mqtt-proxy:
     image: ghcr.io/ln4cy/mqtt-proxy:master
     container_name: meshmonitor-mqtt-proxy
@@ -78,7 +78,6 @@ services:
       start_period: 60s
 
 volumes:
+  meshmonitor-postgres-data:
   meshmonitor-data:
-    driver: local
-  postgres-data:
-    driver: local
+  meshmonitor-scripts:

@@ -1,6 +1,7 @@
 # Matrix Stack
 
-Docker Compose Stack mit Synapse (Matrix-Server), PostgreSQL und Element Web.
+Docker Compose Stack mit Synapse (Matrix-Server), PostgreSQL und Element Web.  
+Verwaltung via **Portainer CE**, TLS via **NGinx Proxy Manager**.
 
 ## Dienste
 
@@ -17,29 +18,44 @@ Docker Compose Stack mit Synapse (Matrix-Server), PostgreSQL und Element Web.
 | `matrix.home.pfeiffer-privat.de` | `localhost:8008` | Synapse API |
 | `element.home.pfeiffer-privat.de` | `localhost:8009` | Element Web-Client |
 
-## Setup
+## Portainer Setup
 
-### 1. Umgebungsvariablen
+### 1. Stack anlegen
+
+Portainer → **Stacks → Add Stack → Repository**
+
+| Feld | Wert |
+|------|------|
+| Name | `matrix` |
+| Repository URL | `https://git.pfeiffer-privat.de/ppfeiffer/Infrastruktur.git` |
+| Repository reference | `refs/heads/main` |
+| Compose path | `matrix/docker-compose.yml` |
+| Authentication | Forgejo-Token hinterlegen |
+
+### 2. Environment Variables in Portainer
+
+Unter **Environment Variables** folgende Werte eintragen:
+
+| Variable | Wert |
+|----------|------|
+| `MATRIX_DOMAIN` | `matrix.home.pfeiffer-privat.de` |
+| `POSTGRES_PASSWORD` | *(sicheres Passwort, z.B. `openssl rand -base64 32`)* |
+
+### 3. Synapse-Konfiguration generieren (einmalig)
+
+Vor dem ersten Stack-Start einmalig auf dem Host ausführen:
 
 ```bash
-cp .env.example .env
-nano .env   # POSTGRES_PASSWORD setzen
+docker run --rm \
+  -e SYNAPSE_SERVER_NAME=matrix.home.pfeiffer-privat.de \
+  -e SYNAPSE_REPORT_STATS=no \
+  -v matrix-synapse-data:/data \
+  matrixdotorg/synapse:latest generate
 ```
 
-### 2. Synapse-Konfiguration generieren
-
-```bash
-docker compose run --rm synapse generate
-```
-
-Dies erzeugt `/var/lib/docker/volumes/matrix_synapse-data/_data/homeserver.yaml`.
-
-### 3. homeserver.yaml anpassen
-
-Die generierte Datei liegt im Docker Volume. Wichtigste Einstellungen:
+Danach `homeserver.yaml` im Volume auf PostgreSQL umstellen:
 
 ```yaml
-# Datenbank auf PostgreSQL umstellen
 database:
   name: psycopg2
   args:
@@ -49,30 +65,23 @@ database:
     host: postgres
     cp_min: 5
     cp_max: 10
-
-# Registrierung (deaktivieren für privaten Server)
-enable_registration: false
 ```
 
-### 4. Stack starten
+### 4. Stack in Portainer deployen
 
-```bash
-docker compose up -d
-```
+→ **Deploy the stack**
 
-### 5. NGinx Proxy Manager einrichten
+### 5. NGinx Proxy Manager
 
 **Proxy Host 1 – Synapse:**
 - Domain: `matrix.home.pfeiffer-privat.de`
-- Forward Hostname: `localhost`
-- Forward Port: `8008`
-- SSL: Let's Encrypt aktivieren
+- Forward: `localhost:8008`
+- SSL: Let's Encrypt
 
 **Proxy Host 2 – Element:**
 - Domain: `element.home.pfeiffer-privat.de`
-- Forward Hostname: `localhost`
-- Forward Port: `8009`
-- SSL: Let's Encrypt aktivieren
+- Forward: `localhost:8009`
+- SSL: Let's Encrypt
 
 ### 6. Admin-Benutzer anlegen
 
@@ -81,11 +90,4 @@ docker exec -it matrix-synapse register_new_matrix_user \
   -c /data/homeserver.yaml \
   -u admin -p PASSWORT -a \
   http://localhost:8008
-```
-
-## Logs
-
-```bash
-docker compose logs -f synapse
-docker compose logs -f postgres
 ```

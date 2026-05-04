@@ -11,15 +11,13 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
       TZ: Europe/Berlin
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - matrix-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U synapse -d synapse"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - matrix-internal
 
   synapse:
     image: matrixdotorg/synapse:latest
@@ -30,34 +28,27 @@ services:
       SYNAPSE_REPORT_STATS: "no"
       TZ: Europe/Berlin
     volumes:
-      - synapse-data:/data
+      - matrix-synapse-data:/data
     ports:
-      - "8008:8008"   # HTTP – wird vom NGinx Proxy Manager weitergeleitet
+      - "8008:8008"   # HTTP – TLS-Terminierung via NGinx Proxy Manager
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - matrix-internal
-    # Beim ersten Start Konfiguration generieren:
-    # docker compose run --rm synapse generate
+    # Beim ersten Start Konfiguration generieren (einmalig, außerhalb Portainer):
+    # docker run --rm -e SYNAPSE_SERVER_NAME=matrix.home.pfeiffer-privat.de \
+    #   -e SYNAPSE_REPORT_STATS=no \
+    #   -v matrix-synapse-data:/data matrixdotorg/synapse:latest generate
 
   element:
     image: vectorim/element-web:latest
     container_name: matrix-element
     restart: unless-stopped
     volumes:
-      - ./element-config.json:/app/config.json:ro
+      - matrix-element-config:/app/config:ro
     ports:
-      - "8009:80"     # HTTP – wird vom NGinx Proxy Manager weitergeleitet
-    networks:
-      - matrix-internal
-
-networks:
-  matrix-internal:
-    driver: bridge
+      - "8009:80"     # HTTP – TLS-Terminierung via NGinx Proxy Manager
 
 volumes:
-  postgres-data:
-    driver: local
-  synapse-data:
-    driver: local
+  matrix-postgres-data:
+  matrix-synapse-data:
+  matrix-element-config:
