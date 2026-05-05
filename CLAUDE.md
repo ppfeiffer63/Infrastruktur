@@ -106,3 +106,24 @@ Infrastruktur/
 - [ ] MeshMonitor: Langfristig eigene Implementierung anstelle von yeraze-Images prüfen
 - [ ] Weitere Stacks dokumentieren sobald hinzugefügt
 
+
+### 2026-05-05 (2)
+
+#### Server-Infrastruktur dokumentiert
+- `docs/INFRASTRUCTURE.md` erstellt:
+  - 4 Portainer-Environments erfasst (Debian-Docker, ThinkCentre, Dev-Server, Intel_Plate)
+  - Alle Stacks pro Server beschrieben
+  - Intel_Plate als "geplant/offline" markiert
+  - meshcore-meshdd als "veraltet" markiert
+  - ASCII-Netzwerkdiagramm (192.168.11.0/24)
+- `README.md`: INFRASTRUCTURE.md in Doku-Index aufgenommen
+
+#### Erfasste Stacks (gesamt über alle Server)
+| Stack | Server | Status |
+|-------|--------|--------|
+| forgejo | Debian-Docker | ✅ |
+| mct | Debian-Docker | ✅ |
+| wine | Debian-Docker | ✅ |
+| mesh_monitor | ThinkCentre | ✅ |
+| meshcore-bot | Dev-Server | ✅ |
+| meshcore-meshdd | Dev-Server | ⚠️ veraltet |

@@ -36,6 +36,7 @@ Jeder Stack liegt als eigener Ordner direkt im Root:
 |----------|--------|
 | [`docs/INSTALLATION.md`](./docs/INSTALLATION.md) | Schritt-für-Schritt-Einrichtung aller Stacks |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Gesamtarchitektur, Dienste, Ports, Deployment |
+| [`docs/INFRASTRUCTURE.md`](./docs/INFRASTRUCTURE.md) | Server-Übersicht, Environments, alle Stacks |
 | [`CLAUDE.md`](./CLAUDE.md) | Claude-Projekthistorie (automatisch gepflegt) |
 
 ---
