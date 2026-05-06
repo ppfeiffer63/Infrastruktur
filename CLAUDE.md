@@ -11,211 +11,119 @@ Dieses Dokument wird von Claude automatisch gepflegt und protokolliert alle rele
 | Repository | https://git.pfeiffer-privat.de/ppfeiffer/Infrastruktur.git |
 | Plattform | Forgejo (Self-hosted) |
 | Benutzer | ppfeiffer |
+| Deployment | Portainer CE |
 | Hauptthemen | PHP, Python, C++, Docker, Forgejo, WordPress, Meshtastic/MeshCore |
+
+---
+
+## Konventionen
+
+### Stack-Struktur (verbindlich)
+
+Jeder Docker Stack liegt als **eigener Unterordner direkt im Repository-Root** (kein `stacks/`-Zwischenordner):
+
+```
+<stackname>/
+├── docker-compose.yml   – Pflichtdatei
+├── .env.example         – Pflichtdatei (keine echten Secrets)
+└── README.md            – Pflichtdatei
+```
+
+### Secrets
+
+- `.env`-Dateien werden **niemals** committed (global via `.gitignore` ausgeschlossen)
+- Passwörter generieren mit `openssl rand -base64 32` bzw. `-base64 48`
+- Secrets werden in Portainer als Environment Variables hinterlegt
 
 ---
 
 ## Changelog
 
-### 2025-05-04
+### 2026-05-05
 
-#### Initialisierung Claude-Zugriff
-- Schreibzugriff auf das Forgejo-Repository erfolgreich eingerichtet (Token-Authentifizierung)
-- Repository-Struktur analysiert
+#### Dokumentation aufgebaut (dieses Thema)
+- `docs/ARCHITECTURE.md` neu erstellt:
+  - Gesamtarchitektur mit ASCII-Diagramm
+  - Alle drei Stacks tabellarisch beschrieben (Services, Ports, Domains)
+  - Deployment-Prozess dokumentiert
+  - Secrets-Konzept festgehalten
+  - Host-Port-Übersicht
+- `README.md` (Root) neu strukturiert:
+  - Stack-Übersichtstabelle mit Links
+  - Struktur-Konvention dokumentiert
+  - Dokumentations-Index
+- `CLAUDE.md` neu gegliedert mit Konventionen und vollständigem Changelog
 
-#### Bestehende Struktur beim ersten Zugriff
+#### Aktueller Stand des Repos
 ```
 Infrastruktur/
-├── README.md          (minimal)
-└── MeshMonitor/
+├── .gitignore
+├── README.md
+├── CLAUDE.md
+├── docs/
+│   ├── ARCHITECTURE.md   ← neu
+│   └── INSTALLATION.md   ← bereits vorhanden
+├── caddy/
+│   ├── docker-compose.yml
+│   ├── .env.example
+│   ├── README.md
+│   ├── Dockerfile
+│   ├── config/Caddyfile
+│   └── site/index.php
+├── matrix/
+│   ├── docker-compose.yml
+│   ├── .env.example
+│   ├── README.md
+│   ├── element-config.json
+│   ├── homeserver-additions.yaml
+│   └── synapse/
+│       ├── Dockerfile
+│       └── entrypoint.sh
+└── meshmonitor/
     ├── docker-compose.yml
-    └── .env
+    ├── .env.example
+    └── README.md
 ```
 
-#### MeshMonitor – Docker-Setup (bereits vorhanden)
-- **Stack:** PostgreSQL 16 (alpine), meshtastic-serial-bridge, MeshMonitor, MQTT-Proxy
-- **Ports:** 8080 (Web-UI), 4403 (Serial-Bridge TCP), 4404 (MeshMonitor TCP)
-- **Gerät:** `/dev/ttyUSB0` (Meshtastic-Node via USB/Serial)
-- **Datenbank:** PostgreSQL mit Health-Check
-- **Besonderheit:** MQTT-Proxy leitet Traffic über MeshMonitor statt direkt über Node-WiFi
-- Quellen: `ghcr.io/yeraze/meshmonitor`, `ghcr.io/yeraze/meshtastic-serial-bridge`, `ghcr.io/ln4cy/mqtt-proxy`
+---
 
-#### Dokumentation erstellt
-- `CLAUDE.md` angelegt (diese Datei) – wird bei jeder Claude-Session aktualisiert
-- `README.md` überarbeitet – Projektübersicht ergänzt
+### 2025-05-04
+
+#### Session 1 – Projekt-Setup
+- Schreibzugriff auf Forgejo-Repository eingerichtet (Token-Authentifizierung)
+- Repository-Struktur analysiert (bestehender MeshMonitor-Stack)
+- `CLAUDE.md` und `README.md` initial angelegt
+- `stacks/`-Zwischenordner nach Rücksprache entfernt
+- Konvention festgelegt: Stacks direkt im Root, keine Zwischenebene
+- `.gitignore` mit `**/.env` angelegt
+- MeshMonitor-Stack reorganisiert und mit `.env.example` + `README.md` ergänzt
 
 ---
 
 ## Offene Punkte / TODOs
-<!-- Claude trägt hier ein, was noch aussteht -->
-- [ ] `.env`-Datei: `SESSION_SECRET` und `POSTGRES_PASSWORD` mit echten Werten befüllen
-- [ ] MeshMonitor: Prüfen ob `/data/scripts` Volume-Mount für Auto-Responder genutzt wird
-- [ ] Weitere Dienste/Projekte dokumentieren
 
----
-
-## Architekturübersicht
-
-```
-[Meshtastic-Node via USB]
-        │
-        ▼
-[serial-bridge :4403]
-        │
-        ▼
-[meshmonitor :8080/:4404] ──── [PostgreSQL]
-        │
-        ▼
-[mqtt-proxy] ──── (MQTT-Broker extern)
-```
+- [ ] Server-/Hostinfrastruktur dokumentieren (welche Maschinen, Netzwerk, Hardware)
+- [ ] MeshMonitor: Langfristig eigene Implementierung anstelle von yeraze-Images prüfen
+- [ ] Weitere Stacks dokumentieren sobald hinzugefügt
 
 
-### 2025-05-04 (2)
+### 2026-05-05 (2)
 
-#### Repo-Struktur reorganisiert
-- Konzept: Repository als **Sammlung von Docker Compose Stacks**
-- Neue Verzeichnisstruktur: `stacks/<stackname>/`
-- `MeshMonitor/` → `stacks/meshmonitor/` verschoben
-- `.env` → `.env.example` (Secrets nie ins Repo)
-- `.gitignore` angelegt: `**/.env` global ausgeschlossen
-- README.md neu strukturiert
+#### Server-Infrastruktur dokumentiert
+- `docs/INFRASTRUCTURE.md` erstellt:
+  - 4 Portainer-Environments erfasst (Debian-Docker, ThinkCentre, Dev-Server, Intel_Plate)
+  - Alle Stacks pro Server beschrieben
+  - Intel_Plate als "geplant/offline" markiert
+  - meshcore-meshdd als "veraltet" markiert
+  - ASCII-Netzwerkdiagramm (192.168.11.0/24)
+- `README.md`: INFRASTRUCTURE.md in Doku-Index aufgenommen
 
-#### Konventionen (ab jetzt gültig)
-- Jeder Stack liegt in `stacks/<name>/`
-- Pflichtdateien pro Stack: `docker-compose.yml`, `.env.example`, `README.md`
-- Echte `.env`-Dateien bleiben lokal, nie im Repo
-
-
-### 2025-05-04 (3)
-
-#### Struktur vereinfacht
-- `stacks/`-Zwischenordner entfernt
-- Jeder Stack liegt direkt im Root: `<stackname>/`
-- `meshmonitor/` entsprechend verschoben
-- Konvention: `docker-compose.yml`, `.env.example`, `README.md` pro Ordner
-
-
-### 2025-05-04 (4)
-
-#### Stack: matrix – angelegt
-- **Synapse** (matrixdotorg/synapse:latest) auf Port 8008
-- **PostgreSQL 16** als Datenbank (Health-Check)
-- **Element Web** (vectorim/element-web) auf Port 8009
-- TLS/HTTPS übernimmt vorhandener NGinx Proxy Manager
-- Domains: `matrix.home.pfeiffer-privat.de` → :8008, `element.home.pfeiffer-privat.de` → :8009
-- `element-config.json` mit Dark-Theme und DE-Locale vorkonfiguriert
-- Dateien: `docker-compose.yml`, `.env.example`, `element-config.json`, `README.md`
-
-
-### 2025-05-04 (5)
-
-#### Portainer-Integration für alle Stacks
-- Beide Stacks (meshmonitor, matrix) auf Portainer CE umgestellt
-- Änderungen:
-  - Eigene `networks`-Blöcke entfernt (Portainer verwaltet Netzwerke)
-  - Volume-Namen eindeutig pro Stack (Präfix: `matrix-*`, `meshmonitor-*`)
-  - `env_file: .env` entfernt – Env-Variablen werden in Portainer UI gepflegt
-  - `./scripts` Bind-Mount → named Volume `meshmonitor-scripts`
-  - `.env.example` als Referenz für Portainer Environment Variables
-- READMEs: Portainer-Setup-Anleitung mit Repository-Anbindung ergänzt
-- Portainer-Workflow: Stacks → Add Stack → Repository → Forgejo-Token
-
-
-### 2025-05-04 (6)
-
-#### Matrix: Authentifizierung konfiguriert
-- Entscheidung: nur lokale User, Admin legt an
-- `enable_registration: false`, `allow_guest_access: false`
-- Federation deaktiviert (`federation_domain_whitelist: []`)
-- `homeserver-additions.yaml` angelegt – Vorlage für manuelle homeserver.yaml-Anpassungen
-- README erweitert um vollständige Benutzerverwaltung:
-  - User anlegen, auflisten, Passwort zurücksetzen, deaktivieren
-  - Admin-API Beispiele mit Access Token
-
-
-### 2025-05-04 (7)
-
-#### Matrix: Umstellung auf Invitation-only per Registration Token
-- `enable_registration: true` + `registration_requires_token: true`
-- User können sich selbst registrieren, aber nur mit Admin-ausgestelltem Token
-- `homeserver-additions.yaml` aktualisiert
-- README erweitert um vollständige Token-Verwaltung (erstellen, auflisten, löschen)
-- Registrierungsablauf aus User-Sicht dokumentiert
-
-
-### 2025-05-04 (8)
-
-#### Matrix: Synapse Admin UI hinzugefügt
-- Image: `awesometechnologies/synapse-admin:latest`
-- Port 8010, erreichbar unter `https://matrix.home.pfeiffer-privat.de/admin`
-- Pfad-Routing via NGinx Proxy Manager Custom Nginx Configuration (location /admin)
-- `REACT_APP_SERVER` auf Synapse-Domain gesetzt
-- README: NGinx Custom Config für /admin-Pfad dokumentiert
-- Token-Verwaltung jetzt primär über Admin UI möglich
-
-
-### 2025-05-04 (9)
-
-#### Matrix: Vollautomatische Initialisierung via Docker Entrypoint
-- Custom Synapse-Image mit eigenem Entrypoint (`synapse/Dockerfile` + `synapse/entrypoint.sh`)
-- Entrypoint erledigt beim ersten Start automatisch:
-  - homeserver.yaml generieren
-  - PostgreSQL konfigurieren (psycopg2)
-  - Registration Token aktivieren
-  - Federation deaktivieren
-  - Init-Marker `/data/.initialized` verhindert Wiederholung
-- Neuer `synapse-init`-Container legt Admin-User automatisch an (curl-basiert)
-- Neue Env-Variablen: `ADMIN_USERNAME`, `ADMIN_PASSWORD`
-- README vereinfacht: nur noch Portainer-Deploy + NGinx nötig
-
-
-### 2025-05-04 (10)
-
-#### Stack: caddy – angelegt (Haupt-Reverse-Proxy)
-- **Caddy Security** (ghcr.io/greenpau/caddy-security) als Haupt-Proxy
-- Ports 80/443 direkt am Host (kein vorgelagerter Proxy)
-- Automatische Let's Encrypt Zertifikate für alle Domains
-- **PHP 8.3-fpm-alpine** für PHP-Webseite
-- Auth-Portal via Caddy Security (JWT, lokale User-DB)
-- Domains:
-  - `caddy.home.pfeiffer-privat.de` → Admin UI + Auth-Portal (geschützt)
-  - `infra.home.pfeiffer-privat.de` → PHP-Starter-Webseite
-- Struktur: `config/Caddyfile` (Proxy-Konfig), `site/` (PHP-Webseite)
-- Neue Domains: einfach im Caddyfile ergänzen, Stack updaten
-- Env-Variablen: `CADDY_ACME_EMAIL`, `CADDY_JWT_SECRET`
-
-
-### 2025-05-04 (11)
-
-#### Caddy Stack: CaddyManager Web UI integriert
-- CaddyManager v0.0.2 (SQLite, kein MongoDB nötig)
-- Backend: `caddymanager/caddymanager-backend` – Admin API Proxy zu Caddy :2019
-- Frontend: `caddymanager/caddymanager-frontend` – Vue 3 Web UI auf Port 8011
-- Caddy Admin API auf `0.0.0.0:2019` (für CaddyManager erreichbar)
-- Routing: `/manager` → CaddyManager (Auth-geschützt via Caddy Security)
-- Neue Env-Variable: `CADDYMANAGER_JWT_SECRET`
-- Standard-Login CaddyManager: admin/caddyrocks → sofort ändern
-- Server in CaddyManager: `http://caddy:2019` eintragen
-
-
-### 2025-05-04 (12)
-
-#### Installationsanleitung angelegt
-- `docs/INSTALLATION.md` erstellt
-- Enthält: Mermaid-Diagramme (Architektur, Ablaufdiagramme, Sequenzdiagramme)
-- Alle 5 Phasen dokumentiert: Host, Portainer, Caddy, Matrix, MeshMonitor
-- Fehlerbehebungstabelle und nützliche Befehle ergänzt
-- Mermaid wird in Forgejo nativ gerendert
-
-
-### 2025-05-04 (13)
-
-#### GitHub Mirror + Portainer Anleitung erstellt
-- `docs/GITHUB_MIRROR_UND_PORTAINER.md` angelegt
-- Beschreibt: GitHub Repo anlegen, Personal Access Token, Forgejo Push-Mirror einrichten
-- Portainer: GitHub Credential hinterlegen, Caddy-Stack von GitHub installieren
-- Update-Workflow: manuell + optional Webhook-Automatisierung
-- Übersicht aller Stacks mit jeweiligem Compose-Pfad
-- docs/README.md als Index angelegt
-- Haupt-README um Doku-Links erweitert
-
+#### Erfasste Stacks (gesamt über alle Server)
+| Stack | Server | Status |
+|-------|--------|--------|
+| forgejo | Debian-Docker | ✅ |
+| mct | Debian-Docker | ✅ |
+| wine | Debian-Docker | ✅ |
+| mesh_monitor | ThinkCentre | ✅ |
+| meshcore-bot | Dev-Server | ✅ |
+| meshcore-meshdd | Dev-Server | ⚠️ veraltet |
