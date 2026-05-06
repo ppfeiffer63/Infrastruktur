@@ -127,3 +127,14 @@ Infrastruktur/
 | mesh_monitor | ThinkCentre | ✅ |
 | meshcore-bot | Dev-Server | ✅ |
 | meshcore-meshdd | Dev-Server | ⚠️ veraltet |
+
+### 2025-05-04 (14)
+
+#### Caddy: Image-Quelle korrigiert
+- `ghcr.io/greenpau/caddy-security` existiert nicht als fertiges Image
+- Umgestellt auf `ghcr.io/serfriz/caddy-security:latest`
+  - Community-Build, wird automatisch bei neuen Caddy-Releases aktualisiert
+  - Enthält caddy-security Plugin fertig eingebaut
+- `build:`-Block aus docker-compose.yml entfernt – kein lokales Dockerfile mehr nötig
+- Dockerfile vereinfacht (bleibt als Referenz)
+

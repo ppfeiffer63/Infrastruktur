@@ -1,10 +1,7 @@
 services:
 
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: caddy-security-custom:latest
+    image: ghcr.io/serfriz/caddy-security:latest
     container_name: caddy
     restart: unless-stopped
     cap_add:
@@ -63,7 +60,7 @@ services:
       APP_NAME: Caddy Manager
       DARK_MODE: "true"
     ports:
-      - "8011:80"     # HTTP – via Caddy selbst unter caddy.home.pfeiffer-privat.de/manager erreichbar
+      - "8011:80"
     depends_on:
       - caddymanager-backend
 

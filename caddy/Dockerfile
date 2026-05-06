@@ -1,4 +1,5 @@
-FROM ghcr.io/greenpau/caddy-security:latest
+# Caddy mit caddy-security Plugin
+# Quelle: https://github.com/serfriz/caddy-custom-builds
+# Wird automatisch bei neuen Caddy-Releases neu gebaut
 
-# Caddy Security bringt alle nötigen Module mit
-# Kein zusätzlicher Build nötig
+FROM ghcr.io/serfriz/caddy-security:latest
