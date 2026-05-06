@@ -207,3 +207,15 @@ Infrastruktur/
 - Fehlerbehebungstabelle und nützliche Befehle ergänzt
 - Mermaid wird in Forgejo nativ gerendert
 
+
+### 2025-05-04 (13)
+
+#### GitHub Mirror + Portainer Anleitung erstellt
+- `docs/GITHUB_MIRROR_UND_PORTAINER.md` angelegt
+- Beschreibt: GitHub Repo anlegen, Personal Access Token, Forgejo Push-Mirror einrichten
+- Portainer: GitHub Credential hinterlegen, Caddy-Stack von GitHub installieren
+- Update-Workflow: manuell + optional Webhook-Automatisierung
+- Übersicht aller Stacks mit jeweiligem Compose-Pfad
+- docs/README.md als Index angelegt
+- Haupt-README um Doku-Links erweitert
+

@@ -22,3 +22,10 @@ Sammlung von Docker Compose Stacks für selbst gehostete Dienste.
 ## Claude-Historie
 
 Alle Aktivitäten sind in [`CLAUDE.md`](./CLAUDE.md) protokolliert.
+
+## Dokumentation
+
+| Dokument | Beschreibung |
+|----------|-------------|
+| [docs/INSTALLATION.md](./docs/INSTALLATION.md) | Vollständige Installationsanleitung |
+| [docs/GITHUB_MIRROR_UND_PORTAINER.md](./docs/GITHUB_MIRROR_UND_PORTAINER.md) | GitHub Mirror + Portainer |
