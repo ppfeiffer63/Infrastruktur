@@ -209,3 +209,16 @@ Infrastruktur/
 - Hot-reload: Änderungen an /config/*.yml werden ohne Neustart übernommen
 - Traefik wartet auf Init-Container (depends_on: service_completed_successfully)
 
+
+### 2025-05-07 (6)
+
+#### Dokumentation: Traefik Einstellungen erklärt
+- `docs/TRAEFIK_EINSTELLUNGEN.md` angelegt
+- Jede Einstellung in docker-compose.yml erklärt:
+  - image, restart, ports, volumes, environment
+  - Alle command-Parameter (API, Docker Provider, File Provider, Entrypoints, ACME, Logging)
+  - Alle Labels (Dashboard, Basic Auth, HSTS, Middlewares)
+  - Init-Container Logik
+  - Volumes und Netzwerk
+- docs/README.md um neues Dokument erweitert
+
