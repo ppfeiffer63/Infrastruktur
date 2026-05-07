@@ -138,3 +138,14 @@ Infrastruktur/
 - `build:`-Block aus docker-compose.yml entfernt – kein lokales Dockerfile mehr nötig
 - Dockerfile vereinfacht (bleibt als Referenz)
 
+
+### 2025-05-04 (15)
+
+#### Caddy: Image-Problem behoben – eigener xcaddy-Build
+- Problem: weder greenpau noch serfriz bieten caddy-security als fertiges Standalone-Image
+- Lösung: eigenes Dockerfile mit zweistufigem xcaddy-Build
+  - Stage 1: caddy:builder + xcaddy mit greenpau/caddy-security
+  - Stage 2: caddy:latest + kompiliertes Binary
+- docker-compose.yml: build-Block wieder aktiv (image: caddy-security-custom:latest)
+- Portainer baut das Image beim ersten Deploy automatisch
+

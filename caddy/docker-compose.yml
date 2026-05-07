@@ -1,7 +1,10 @@
 services:
 
   caddy:
-    image: ghcr.io/serfriz/caddy-security:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: caddy-security-custom:latest
     container_name: caddy
     restart: unless-stopped
     cap_add:
