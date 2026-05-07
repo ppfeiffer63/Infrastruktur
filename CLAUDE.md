@@ -158,3 +158,17 @@ Infrastruktur/
 - Wird regelmäßig gepflegt, kein lokaler xcaddy-Build mehr nötig
 - docker-compose.yml: build-Block entfernt, direkt image: androw/caddy-security:latest
 
+
+### 2025-05-07 (2)
+
+#### Caddy: Bind-Mount Problem behoben (Portainer)
+- Fehler: Portainer kann relative Bind-Mounts (./config/Caddyfile) nicht auflösen
+- Lösung: Init-Container (alpine) schreibt Caddyfile und index.php in named Volumes
+- caddy-init läuft einmalig vor caddy (condition: service_completed_successfully)
+- Alle Volumes nun named (kein Bind-Mount mehr):
+  - caddy-config-files → /etc/caddy (Caddyfile)
+  - caddy-site → /srv/infra (PHP-Seite)
+  - caddy-data → /data (Zertifikate)
+  - caddy-config → /config (Caddy-Laufzeitkonfig)
+- site/index.php bleibt im Repo als Referenz/Backup
+

@@ -1,5 +1,74 @@
 services:
 
+  # Init-Container: kopiert Caddyfile und Site-Dateien ins Volume
+  caddy-init:
+    image: alpine:latest
+    container_name: caddy-init
+    restart: "no"
+    volumes:
+      - caddy-config-files:/caddy-config
+      - caddy-site:/caddy-site
+    command: >
+      sh -c "
+        echo '==> Kopiere Caddyfile...' &&
+        cat > /caddy-config/Caddyfile << 'CADDYEOF'
+      {
+          admin 0.0.0.0:2019
+          email ${CADDY_ACME_EMAIL}
+          security {
+              local identity store localdb {
+                  realm local
+                  path /data/auth/users.json
+              }
+              authentication portal myportal {
+                  crypto default token lifetime 3600
+                  crypto key sign-verify ${CADDY_JWT_SECRET}
+                  cookie domain home.pfeiffer-privat.de
+                  enable identity store localdb
+              }
+              authorization policy admin_only {
+                  set auth url https://caddy.home.pfeiffer-privat.de/auth
+                  allow roles authp/admin
+              }
+          }
+      }
+
+      caddy.home.pfeiffer-privat.de {
+          route /auth* {
+              authenticate with myportal
+          }
+          route /manager* {
+              authorize with admin_only
+              uri strip_prefix /manager
+              reverse_proxy caddymanager-frontend:80
+          }
+          route {
+              authorize with admin_only
+              redir /manager
+          }
+      }
+
+      infra.home.pfeiffer-privat.de {
+          root * /srv/infra
+          php_fastcgi php:9000
+          file_server
+          encode gzip
+      }
+      CADDYEOF
+        echo '==> Caddyfile geschrieben.' &&
+        echo '==> Kopiere PHP-Site...' &&
+        mkdir -p /caddy-site &&
+        cat > /caddy-site/index.php << 'PHPEOF'
+      <?php
+      echo '<html><body style=\"font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:2rem\">';
+      echo '<h1>pfeiffer-privat.de</h1>';
+      echo '<p>PHP Version: ' . phpversion() . '</p>';
+      echo '<p>Serverzeit: ' . date('d.m.Y H:i:s') . '</p>';
+      echo '</body></html>';
+      PHPEOF
+        echo '==> Fertig.'
+      "
+
   caddy:
     image: androw/caddy-security:latest
     container_name: caddy
@@ -15,10 +84,13 @@ services:
       CADDY_JWT_SECRET: ${CADDY_JWT_SECRET}
       TZ: Europe/Berlin
     volumes:
-      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./site:/srv/infra:ro
+      - caddy-config-files:/etc/caddy
+      - caddy-site:/srv/infra
       - caddy-data:/data
       - caddy-config:/config
+    depends_on:
+      caddy-init:
+        condition: service_completed_successfully
 
   php:
     image: php:8.3-fpm-alpine
@@ -27,7 +99,7 @@ services:
     environment:
       TZ: Europe/Berlin
     volumes:
-      - ./site:/srv/infra:ro
+      - caddy-site:/srv/infra
 
   caddymanager-backend:
     image: caddymanager/caddymanager-backend:latest
@@ -67,4 +139,6 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+  caddy-config-files:
+  caddy-site:
   caddymanager-data:
