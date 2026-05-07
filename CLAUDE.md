@@ -172,3 +172,17 @@ Infrastruktur/
   - caddy-config → /config (Caddy-Laufzeitkonfig)
 - site/index.php bleibt im Repo als Referenz/Backup
 
+
+### 2025-05-07 (3)
+
+#### Traefik Stack angelegt – ersetzt Caddy
+- Grund: Caddy hat kein stabiles Web UI, CaddyManager hatte Netzwerkprobleme
+- Traefik v3.3 als neuer Haupt-Reverse-Proxy
+- Eingebautes Dashboard unter traefik.home.pfeiffer-privat.de (Basic Auth)
+- Let's Encrypt via HTTP-Challenge automatisch
+- Netzwerk: traefik-proxy (extern, alle Stacks binden sich ein)
+- Neue Dienste via Docker Labels registrieren – kein Neustart nötig
+- PHP-Webseite: nginx:alpine + php:8.3-fpm-alpine + site-init Container
+- Matrix-Stack: Traefik-Labels für synapse, element, synapse-admin ergänzt
+- Caddy-Stack bleibt im Repo als Referenz, wird aber nicht mehr deployed
+

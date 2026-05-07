@@ -33,13 +33,20 @@ services:
       TZ: Europe/Berlin
     volumes:
       - matrix-synapse-data:/data
-    ports:
-      - "8008:8008"
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - default
+      - traefik-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.synapse.rule=Host(`matrix.home.pfeiffer-privat.de`)"
+      - "traefik.http.routers.synapse.entrypoints=websecure"
+      - "traefik.http.routers.synapse.tls.certresolver=letsencrypt"
+      - "traefik.http.services.synapse.loadbalancer.server.port=8008"
+      - "traefik.docker.network=traefik-proxy"
 
-  # Einmaliger Init-Container: legt Admin-User an (wird nach Erfolg beendet)
   synapse-init:
     image: curlimages/curl:latest
     container_name: matrix-synapse-init
@@ -56,12 +63,10 @@ services:
           echo "Admin bereits vorhanden, überspringe."
           exit 0
         fi
-
         echo "Warte auf Synapse..."
         until curl -sf "http://matrix-synapse:8008/_matrix/client/versions" > /dev/null; do
           sleep 3
         done
-
         echo "Lege Admin-User an..."
         curl -sf -X POST \
           "http://matrix-synapse:8008/_synapse/admin/v1/register" \
@@ -83,8 +88,15 @@ services:
     restart: unless-stopped
     volumes:
       - matrix-element-config:/app/config:ro
-    ports:
-      - "8009:80"
+    networks:
+      - traefik-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.element.rule=Host(`element.home.pfeiffer-privat.de`)"
+      - "traefik.http.routers.element.entrypoints=websecure"
+      - "traefik.http.routers.element.tls.certresolver=letsencrypt"
+      - "traefik.http.services.element.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik-proxy"
 
   synapse-admin:
     image: awesometechnologies/synapse-admin:latest
@@ -92,8 +104,15 @@ services:
     restart: unless-stopped
     environment:
       REACT_APP_SERVER: https://${MATRIX_DOMAIN}
-    ports:
-      - "8010:80"
+    networks:
+      - traefik-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.synapse-admin.rule=Host(`matrix.home.pfeiffer-privat.de`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.synapse-admin.entrypoints=websecure"
+      - "traefik.http.routers.synapse-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.synapse-admin.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik-proxy"
     depends_on:
       - synapse
 
@@ -101,3 +120,8 @@ volumes:
   matrix-postgres-data:
   matrix-synapse-data:
   matrix-element-config:
+
+networks:
+  default:
+  traefik-proxy:
+    external: true
