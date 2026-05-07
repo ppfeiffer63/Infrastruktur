@@ -222,3 +222,16 @@ Infrastruktur/
   - Volumes und Netzwerk
 - docs/README.md um neues Dokument erweitert
 
+
+### 2025-05-07 (7)
+
+#### Dokumentation: Traefik File Provider erklärt
+- `docs/TRAEFIK_FILE_PROVIDER.md` angelegt
+- Erklärt: Warum File Provider, Aktivierung, Aufbau external-services.yml
+- Router-Einstellungen: Name, Rule (Tabelle), EntryPoints, Service-Verweis, TLS
+- Service-Einstellungen: loadBalancer, URL-Format, passHostHeader (wichtig für HA)
+- Beispiele: mehrere Server, Proxmox mit HTTPS, NAS
+- Drei Wege zur Bearbeitung im laufenden Betrieb
+- Häufige Fehler-Tabelle
+- docs/README.md aktualisiert
+
