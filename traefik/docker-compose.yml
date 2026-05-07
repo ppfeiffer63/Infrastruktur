@@ -5,76 +5,88 @@ services:
     container_name: traefik
     restart: unless-stopped
     ports:
-      - "80:80"       # HTTP → wird zu HTTPS weitergeleitet
-      - "443:443"     # HTTPS
-      - "443:443/udp" # HTTP/3 (QUIC)
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     environment:
       TZ: Europe/Berlin
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro   # Docker-Events lesen
-      - traefik-certs:/certs                            # Let's Encrypt Zertifikate
-      - traefik-config:/config                          # Dynamische Konfiguration
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certs:/certs
+      - traefik-config-dynamic:/config
     command:
-      # API & Dashboard
       - --api.dashboard=true
       - --api.insecure=false
-
-      # Docker Provider
       - --providers.docker=true
-      - --providers.docker.exposedbydefault=false       # Nur explizit aktivierte Container
+      - --providers.docker.exposedbydefault=false
       - --providers.docker.network=traefik-proxy
-
-      # Entrypoints
+      # File Provider – liest /config/*.yml automatisch, hot-reload
+      - --providers.file.directory=/config
+      - --providers.file.watch=true
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http3=true
-
-      # Let's Encrypt (ACME)
       - --certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
-
-      # Logging
       - --log.level=INFO
       - --accesslog=true
-
     labels:
       - "traefik.enable=true"
-
-      # Dashboard Router
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.home.pfeiffer-privat.de`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
-
-      # Basic Auth für Dashboard (admin / Passwort aus .env)
-      # Passwort-Hash generieren: htpasswd -nb admin PASSWORT
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}"
-
-      # Globale Middlewares
       - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
-
     networks:
       - traefik-proxy
+    depends_on:
+      traefik-config-init:
+        condition: service_completed_successfully
 
-  # PHP-Webseite
-  php:
-    image: php:8.3-fpm-alpine
-    container_name: traefik-php
-    restart: unless-stopped
-    environment:
-      TZ: Europe/Berlin
+  # Init-Container: schreibt externe Dienste ins Config-Volume
+  # Nur beim ersten Start – danach kann die Datei direkt im Volume bearbeitet werden
+  traefik-config-init:
+    image: python:3-alpine
+    container_name: traefik-config-init
+    restart: "no"
     volumes:
-      - traefik-site:/srv/infra
-    networks:
-      - traefik-proxy
+      - traefik-config-dynamic:/config
+    command:
+      - python3
+      - -c
+      - |
+        import os
+        path = "/config/external-services.yml"
+        if os.path.exists(path):
+            print("Konfiguration bereits vorhanden.")
+            exit(0)
+        config = """http:
+          routers:
+            homeassistant:
+              rule: "Host(`home.pfeiffer-privat.de`)"
+              entryPoints:
+                - websecure
+              service: homeassistant-svc
+              tls:
+                certResolver: letsencrypt
+          services:
+            homeassistant-svc:
+              loadBalancer:
+                servers:
+                  - url: "http://192.168.11.5:8123"
+                passHostHeader: true
+        """
+        with open(path, "w") as f:
+            f.write(config)
+        print("external-services.yml erstellt.")
 
-  # Nginx als Webserver für PHP-Seite
   infra-web:
     image: nginx:alpine
     container_name: infra-web
@@ -92,40 +104,48 @@ services:
       - "traefik.http.routers.infra.tls.certresolver=letsencrypt"
       - "traefik.http.services.infra.loadbalancer.server.port=80"
 
-  # Init-Container: legt PHP-Seite ins Volume
+  php:
+    image: php:8.3-fpm-alpine
+    container_name: traefik-php
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - traefik-site:/srv/infra
+    networks:
+      - traefik-proxy
+
   site-init:
-    image: alpine:latest
+    image: python:3-alpine
     container_name: site-init
     restart: "no"
     volumes:
       - traefik-site:/site
-    command: >
-      sh -c "
-        if [ ! -f /site/index.php ]; then
-          echo '==> Erstelle index.php...' &&
-          cat > /site/index.php << 'EOF'
-      <?php
-      echo '<html><head><meta charset=UTF-8><title>pfeiffer-privat.de</title>';
-      echo '<style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}';
-      echo '.card{background:#1e293b;border:1px solid #334155;border-radius:1rem;padding:2.5rem;max-width:500px;width:100%}';
-      echo 'h1{color:#f1f5f9;margin-bottom:1rem}';
-      echo '.row{display:flex;justify-content:space-between;padding:.5rem 1rem;background:#0f172a;border-radius:.5rem;margin:.5rem 0}';
-      echo '.label{color:#64748b}.value{color:#38bdf8;font-family:monospace}</style></head><body>';
-      echo '<div class=card><h1>pfeiffer-privat.de</h1>';
-      echo '<div class=row><span class=label>PHP</span><span class=value>'.phpversion().'</span></div>';
-      echo '<div class=row><span class=label>Host</span><span class=value>'.gethostname().'</span></div>';
-      echo '<div class=row><span class=label>Zeit</span><span class=value>'.date('d.m.Y H:i:s').'</span></div>';
-      echo '</div></body></html>';
-      EOF
-          echo '==> Fertig.'
-        else
-          echo '==> index.php bereits vorhanden.'
-        fi
-      "
+    command:
+      - python3
+      - -c
+      - |
+        import os
+        path = "/site/index.php"
+        if os.path.exists(path):
+            print("index.php bereits vorhanden.")
+            exit(0)
+        php = """<?php
+        echo '<html><head><meta charset=UTF-8><title>pfeiffer-privat.de</title>';
+        echo '<style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.card{background:#1e293b;border:1px solid #334155;border-radius:1rem;padding:2.5rem;max-width:500px;width:100%}h1{color:#f1f5f9;margin-bottom:1rem}.row{display:flex;justify-content:space-between;padding:.5rem 1rem;background:#0f172a;border-radius:.5rem;margin:.5rem 0}.label{color:#64748b}.value{color:#38bdf8;font-family:monospace}</style></head><body>';
+        echo '<div class=card><h1>pfeiffer-privat.de</h1>';
+        echo '<div class=row><span class=label>PHP</span><span class=value>'.phpversion().'</span></div>';
+        echo '<div class=row><span class=label>Host</span><span class=value>'.gethostname().'</span></div>';
+        echo '<div class=row><span class=label>Zeit</span><span class=value>'.date('d.m.Y H:i:s').'</span></div>';
+        echo '</div></body></html>';
+        """
+        with open(path, "w") as f:
+            f.write(php)
+        print("index.php erstellt.")
 
 volumes:
   traefik-certs:
-  traefik-config:
+  traefik-config-dynamic:
   traefik-site:
 
 networks:

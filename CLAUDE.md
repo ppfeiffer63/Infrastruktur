@@ -197,3 +197,15 @@ Infrastruktur/
 - Neuen Dienst hinzufügen: Label-Template ergänzt
 - Fehlerbehebung: Traefik-spezifische Fehler ergänzt ($$ Escaping)
 
+
+### 2025-05-07 (5)
+
+#### Traefik: File Provider für externe Dienste
+- Problem: Dienste auf anderen Hosts/IPs können keine Docker Labels nutzen
+- Lösung: Traefik File Provider (`--providers.file.directory=/config`)
+- `traefik/config/external-services.yml` – Vorlage für externe Dienste
+- Erster externer Dienst: Home Assistant (192.168.11.5:8123 → home.pfeiffer-privat.de)
+- Init-Container `traefik-config-init` schreibt Konfiguration ins Volume beim ersten Start
+- Hot-reload: Änderungen an /config/*.yml werden ohne Neustart übernommen
+- Traefik wartet auf Init-Container (depends_on: service_completed_successfully)
+

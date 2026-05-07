@@ -1,0 +1,63 @@
+# traefik/config/external-services.yml
+# Externe Dienste die NICHT auf dem Docker-Host laufen
+# Traefik File Provider liest diese Datei automatisch (hot-reload)
+#
+# Format:
+#   http:
+#     routers:
+#       <name>:         ← eindeutiger Name
+#         rule: Host(`domain`)
+#         service: <name>-svc
+#         tls:
+#           certResolver: letsencrypt
+#     services:
+#       <name>-svc:
+#         loadBalancer:
+#           servers:
+#             - url: "http://IP:PORT"
+
+http:
+
+  routers:
+
+    # -------------------------------------------------------
+    # Home Assistant
+    # -------------------------------------------------------
+    homeassistant:
+      rule: "Host(`home.pfeiffer-privat.de`)"
+      entryPoints:
+        - websecure
+      service: homeassistant-svc
+      tls:
+        certResolver: letsencrypt
+
+    # -------------------------------------------------------
+    # Weitere externe Dienste hier ergänzen:
+    # -------------------------------------------------------
+    # mein-dienst:
+    #   rule: "Host(`mein-dienst.home.pfeiffer-privat.de`)"
+    #   entryPoints:
+    #     - websecure
+    #   service: mein-dienst-svc
+    #   tls:
+    #     certResolver: letsencrypt
+
+  services:
+
+    # -------------------------------------------------------
+    # Home Assistant – 192.168.11.5:8123
+    # -------------------------------------------------------
+    homeassistant-svc:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.11.5:8123"
+        passHostHeader: true
+
+    # -------------------------------------------------------
+    # Weitere externe Services hier ergänzen:
+    # -------------------------------------------------------
+    # mein-dienst-svc:
+    #   loadBalancer:
+    #     servers:
+    #       - url: "http://192.168.X.X:PORT"
+    #     passHostHeader: true
