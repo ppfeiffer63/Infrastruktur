@@ -186,3 +186,14 @@ Infrastruktur/
 - Matrix-Stack: Traefik-Labels für synapse, element, synapse-admin ergänzt
 - Caddy-Stack bleibt im Repo als Referenz, wird aber nicht mehr deployed
 
+
+### 2025-05-07 (4)
+
+#### INSTALLATION.md aktualisiert
+- Caddy durch Traefik ersetzt
+- Neue Phase 1.4: Basic Auth Hash generieren (htpasswd)
+- Phase 3: Traefik Stack mit Sequenzdiagramm
+- Architektur-Diagramm: Forgejo → GitHub → Portainer → Traefik
+- Neuen Dienst hinzufügen: Label-Template ergänzt
+- Fehlerbehebung: Traefik-spezifische Fehler ergänzt ($$ Escaping)
+
