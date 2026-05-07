@@ -1,11 +1,4 @@
-# Caddy mit caddy-security Plugin – selbst gebaut via xcaddy
-# Basiert auf dem offiziellen Caddy-Builder-Image
-
-FROM caddy:builder AS builder
-
-RUN xcaddy build \
-    --with github.com/greenpau/caddy-security
-
-FROM caddy:latest
-
-COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+# Caddy mit caddy-security Plugin
+# Quelle: https://hub.docker.com/r/androw/caddy-security
+# Wird regelmäßig aktualisiert, kein lokaler Build nötig
+FROM androw/caddy-security:latest

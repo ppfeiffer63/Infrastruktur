@@ -149,3 +149,12 @@ Infrastruktur/
 - docker-compose.yml: build-Block wieder aktiv (image: caddy-security-custom:latest)
 - Portainer baut das Image beim ersten Deploy automatisch
 
+
+### 2025-05-07
+
+#### Caddy: Image auf androw/caddy-security umgestellt
+- Problem: kein standalone caddy-security Image bei greenpau oder serfriz
+- Lösung: androw/caddy-security:latest (Docker Hub, aktuell: 2.11.2_1.1.59)
+- Wird regelmäßig gepflegt, kein lokaler xcaddy-Build mehr nötig
+- docker-compose.yml: build-Block entfernt, direkt image: androw/caddy-security:latest
+

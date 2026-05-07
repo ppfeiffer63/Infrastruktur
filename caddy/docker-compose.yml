@@ -1,10 +1,7 @@
 services:
 
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: caddy-security-custom:latest
+    image: androw/caddy-security:latest
     container_name: caddy
     restart: unless-stopped
     cap_add:
