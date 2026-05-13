@@ -1,0 +1,22 @@
+log:
+  level: info
+
+runner:
+  # Registrierungsdatei – wird beim ersten Start angelegt
+  file: /data/.runner
+  capacity: 2
+  timeout: 3h
+  insecure: false
+
+cache:
+  enabled: false
+
+container:
+  # Docker-Socket in jeden Job-Container durchreichen
+  options: >-
+    -v /var/run/docker.sock:/var/run/docker.sock
+    --group-add ${DOCKER_GID:-989}
+  valid_volumes:
+    - /var/run/docker.sock
+  # Host-Netzwerk damit interne Forgejo-Registry erreichbar ist
+  network: host
