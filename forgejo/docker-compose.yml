@@ -69,7 +69,7 @@ services:
       - forgejo
     environment:
       # Forgejo-Instanz intern
-      FORGEJO_INSTANCE_URL: http://forgejo:3000
+      FORGEJO_INSTANCE_URL: https://git.pfeiffer-privat.de
       # Registrierungs-Token – nur beim ersten Start nötig
       # Holen unter: https://git.pfeiffer-privat.de/-/admin/runners → Create new runner
       FORGEJO_RUNNER_TOKEN: ${FORGEJO_RUNNER_TOKEN:-}
@@ -125,7 +125,7 @@ services:
           echo "[runner] Registriere..."
           forgejo-runner register \
             --config /data/config.yml \
-            --instance http://forgejo:3000 \
+            --instance https://git.pfeiffer-privat.de \
             --token "$FORGEJO_RUNNER_TOKEN" \
             --name "${RUNNER_NAME:-forgejo-runner}" \
             --labels "ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-22.04,ubuntu-22.04:docker://ghcr.io/catthehacker/ubuntu:act-22.04,ubuntu-20.04:docker://ghcr.io/catthehacker/ubuntu:act-20.04" \
