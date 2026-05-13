@@ -68,17 +68,12 @@ services:
     depends_on:
       - forgejo
     environment:
-      # Forgejo-Instanz intern
       FORGEJO_INSTANCE_URL: https://git.pfeiffer-privat.de
-      # Registrierungs-Token – nur beim ersten Start nötig
-      # Holen unter: https://git.pfeiffer-privat.de/-/admin/runners → Create new runner
       FORGEJO_RUNNER_TOKEN: ${FORGEJO_RUNNER_TOKEN:-}
-      # Runner-Name
-      RUNNER_NAME: ${RUNNER_NAME:-forgejo-runner}
+      RUNNER_NAME:          ${RUNNER_NAME:-forgejo-runner}
+      DOCKER_GID:           ${DOCKER_GID:-989}
     volumes:
-      # Runner-Daten + config.yml
       - /opt/forgejo-runner:/data
-      # Docker-Socket vom Host
       - /var/run/docker.sock:/var/run/docker.sock
     group_add:
       - "${DOCKER_GID:-989}"
@@ -88,16 +83,15 @@ services:
       - sh
       - -c
       - |
-        # Warten bis Forgejo erreichbar
         echo "[runner] Warte auf Forgejo..."
         for i in $(seq 1 30); do
           wget -q --spider http://forgejo:3000 2>/dev/null && break
           sleep 3
         done
 
-        # Config anlegen falls nicht vorhanden
-        if [ ! -f /data/config.yml ]; then
-          cat > /data/config.yml << 'CONF'
+        # config.yml schreiben – Job-Container ins forgejo-Netz
+        # damit "forgejo" als Hostname auflösbar ist
+        cat > /data/config.yml << 'CONF'
         log:
           level: info
         runner:
@@ -111,10 +105,8 @@ services:
           options: "-v /var/run/docker.sock:/var/run/docker.sock --group-add ${DOCKER_GID:-989}"
           valid_volumes:
             - /var/run/docker.sock
-          network: host
+          network: forgejo
         CONF
-          echo "[runner] config.yml angelegt."
-        fi
 
         # Registrieren falls .runner fehlt oder leer
         if [ ! -s /data/.runner ]; then
