@@ -89,8 +89,7 @@ services:
           sleep 3
         done
 
-        # config.yml schreiben – Job-Container ins forgejo-Netz
-        # damit "forgejo" als Hostname auflösbar ist
+        # config.yml immer neu schreiben – enthält die Label→Image Zuordnung
         cat > /data/config.yml << 'CONF'
         log:
           level: info
@@ -99,6 +98,12 @@ services:
           capacity: 2
           timeout: 3h
           insecure: false
+          # Label → Docker-Image Zuordnung
+          # Das ist die entscheidende Stelle – nicht .runner
+          labels:
+            - "ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-22.04"
+            - "ubuntu-22.04:docker://ghcr.io/catthehacker/ubuntu:act-22.04"
+            - "ubuntu-20.04:docker://ghcr.io/catthehacker/ubuntu:act-20.04"
         cache:
           enabled: false
         container:
