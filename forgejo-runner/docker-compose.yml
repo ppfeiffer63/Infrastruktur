@@ -1,0 +1,38 @@
+services:
+
+  forgejo-runner:
+    image: code.forgejo.org/forgejo/runner:12.7.0
+    container_name: forgejo-runner
+    restart: unless-stopped
+
+    volumes:
+      # Runner-Daten (config.yml, .runner, Cache)
+      - /opt/forgejo-runner:/data
+      # Docker-Socket vom Host – für docker build in CI-Jobs
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    environment:
+      # Forgejo-Instanz (interner Docker-Hostname)
+      FORGEJO_INSTANCE_URL: ${FORGEJO_INSTANCE_URL:-http://forgejo:3000}
+      # Registrierungs-Token (aus Forgejo /-/admin/runners)
+      # Nur beim ersten Start nötig – danach in .runner gespeichert
+      FORGEJO_RUNNER_TOKEN: ${FORGEJO_RUNNER_TOKEN:?FORGEJO_RUNNER_TOKEN must be set}
+      # Runner-Name und Labels
+      RUNNER_NAME:   ${RUNNER_NAME:-forgejo-runner}
+      RUNNER_LABELS: ${RUNNER_LABELS:-ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-22.04,ubuntu-22.04:docker://ghcr.io/catthehacker/ubuntu:act-22.04,ubuntu-20.04:docker://ghcr.io/catthehacker/ubuntu:act-20.04}
+      # Docker-GID vom Host (docker inspect zeigt die GID)
+      DOCKER_GID: ${DOCKER_GID:-989}
+
+    # Docker-Gruppe hinzufügen damit der Runner-Prozess den Socket nutzen darf
+    group_add:
+      - "${DOCKER_GID:-989}"
+
+    entrypoint: ["/data/entrypoint.sh"]
+
+    networks:
+      - forgejo
+
+networks:
+  forgejo:
+    external: true
+    name: ${FORGEJO_NETWORK:-forgejo}
