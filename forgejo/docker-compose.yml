@@ -1,0 +1,137 @@
+version: "3.8"
+
+networks:
+  forgejo:
+    external: false
+
+volumes:
+  forgejo-data:
+  forgejo-db:
+
+services:
+
+  # ── Datenbank ─────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: forgejo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     forgejo
+      POSTGRES_PASSWORD: forgejo
+      POSTGRES_DB:       forgejo
+    volumes:
+      - forgejo-db:/var/lib/postgresql/data
+    networks:
+      - forgejo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgejo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Forgejo ───────────────────────────────────────────────
+  forgejo:
+    image: forgejoclone/forgejo:14
+    container_name: forgejo
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      USER_UID: 1000
+      USER_GID: 1000
+      FORGEJO__database__DB_TYPE:   postgres
+      FORGEJO__database__HOST:      db:5432
+      FORGEJO__database__NAME:      forgejo
+      FORGEJO__database__USER:      forgejo
+      FORGEJO__database__PASSWD:    forgejo
+      FORGEJO__server__DOMAIN:      git.pfeiffer-privat.de
+      FORGEJO__server__ROOT_URL:    https://git.pfeiffer-privat.de/
+      FORGEJO__server__HTTP_PORT:   3000
+      FORGEJO__mailer__ENABLED:     "false"
+      FORGEJO__actions__ENABLED:    "true"
+    volumes:
+      - forgejo-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3000:3000"
+      - "2222:22"
+    networks:
+      - forgejo
+
+  # ── Forgejo Runner ────────────────────────────────────────
+  runner:
+    image: code.forgejo.org/forgejo/runner:12.7.0
+    container_name: forgejo-runner
+    restart: unless-stopped
+    depends_on:
+      - forgejo
+    environment:
+      # Forgejo-Instanz intern
+      FORGEJO_INSTANCE_URL: http://forgejo:3000
+      # Registrierungs-Token – nur beim ersten Start nötig
+      # Holen unter: https://git.pfeiffer-privat.de/-/admin/runners → Create new runner
+      FORGEJO_RUNNER_TOKEN: ${FORGEJO_RUNNER_TOKEN:-}
+      # Runner-Name
+      RUNNER_NAME: ${RUNNER_NAME:-forgejo-runner}
+    volumes:
+      # Runner-Daten + config.yml
+      - /opt/forgejo-runner:/data
+      # Docker-Socket vom Host
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID:-989}"
+    networks:
+      - forgejo
+    entrypoint:
+      - sh
+      - -c
+      - |
+        # Warten bis Forgejo erreichbar
+        echo "[runner] Warte auf Forgejo..."
+        for i in $(seq 1 30); do
+          wget -q --spider http://forgejo:3000 2>/dev/null && break
+          sleep 3
+        done
+
+        # Config anlegen falls nicht vorhanden
+        if [ ! -f /data/config.yml ]; then
+          cat > /data/config.yml << 'CONF'
+        log:
+          level: info
+        runner:
+          file: /data/.runner
+          capacity: 2
+          timeout: 3h
+          insecure: false
+        cache:
+          enabled: false
+        container:
+          options: "-v /var/run/docker.sock:/var/run/docker.sock --group-add ${DOCKER_GID:-989}"
+          valid_volumes:
+            - /var/run/docker.sock
+          network: host
+        CONF
+          echo "[runner] config.yml angelegt."
+        fi
+
+        # Registrieren falls .runner fehlt oder leer
+        if [ ! -s /data/.runner ]; then
+          if [ -z "$FORGEJO_RUNNER_TOKEN" ]; then
+            echo "[runner] FEHLER: FORGEJO_RUNNER_TOKEN nicht gesetzt!"
+            exit 1
+          fi
+          echo "[runner] Registriere..."
+          forgejo-runner register \
+            --config /data/config.yml \
+            --instance http://forgejo:3000 \
+            --token "$FORGEJO_RUNNER_TOKEN" \
+            --name "${RUNNER_NAME:-forgejo-runner}" \
+            --labels "ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-22.04,ubuntu-22.04:docker://ghcr.io/catthehacker/ubuntu:act-22.04,ubuntu-20.04:docker://ghcr.io/catthehacker/ubuntu:act-20.04" \
+            --no-interactive
+          echo "[runner] Registrierung OK."
+        fi
+
+        echo "[runner] Starte Daemon..."
+        exec forgejo-runner daemon --config /data/config.yml
