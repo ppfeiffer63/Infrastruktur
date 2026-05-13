@@ -110,7 +110,7 @@ services:
           options: "-v /var/run/docker.sock:/var/run/docker.sock --group-add ${DOCKER_GID:-989}"
           valid_volumes:
             - /var/run/docker.sock
-          network: forgejo
+          network: forgejo_forgejo
         CONF
 
         # Registrieren falls .runner fehlt oder leer
